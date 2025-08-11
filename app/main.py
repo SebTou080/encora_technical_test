@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.middleware import CorrelationIdMiddleware
-from .api.routers import descriptions, images
+from .api.routers import descriptions, feedback, images
 from .core.config import settings
 from .core.logging import setup_logging
 
@@ -33,6 +33,7 @@ app.add_middleware(
 # Include routers
 app.include_router(descriptions.router)
 app.include_router(images.router)
+app.include_router(feedback.router)
 
 
 @app.get("/health")

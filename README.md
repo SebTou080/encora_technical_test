@@ -11,7 +11,7 @@ AI-powered snack marketing content generator using FastAPI and LangChain.
 - Human-readable logging with correlation IDs
 - Comprehensive test coverage
 
-## Phase 2 - Promotional Images Generation 🎨
+## Phase 2 - Promotional Images Generation 🎨 ✅
 
 ### Features
 - **Hugging Face Inference API** integration (FLUX.1-schnell model)
@@ -21,6 +21,18 @@ AI-powered snack marketing content generator using FastAPI and LangChain.
 - **Image download and regeneration** capabilities
 - **Health monitoring** for image services
 - **Comprehensive test coverage** with mocks
+
+## Phase 3 - Feedback Analysis and Insights 📊
+
+### Features
+- **LangChain-powered sentiment analysis** with GPT-4o
+- **CSV/XLSX file upload** and intelligent parsing
+- **Concurrent processing** with configurable semaphore limits
+- **Smart theme extraction** and issue prioritization
+- **Feature request detection** from user comments
+- **Multi-dimensional aggregation** (by SKU, channel, sentiment)
+- **Excel export** with multiple analysis sheets
+- **Comprehensive insights** with actionable recommendations
 
 ### Quick Start
 
@@ -121,6 +133,24 @@ curl "http://localhost:8000/v1/images/artifacts/{job_id}/download/image.png" -o 
 curl "http://localhost:8000/v1/images/artifacts/{job_id}/download/metadata.json" -o metadata.json
 ```
 
+#### Analyze Customer Feedback (Phase 3)
+
+```bash
+# Upload CSV/XLSX file for analysis
+curl -X POST "http://localhost:8000/v1/feedback/analyze" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@feedback_comments.csv"
+
+# Get sample file format
+curl "http://localhost:8000/v1/feedback/sample"
+
+# Export analysis to Excel
+curl -X POST "http://localhost:8000/v1/feedback/export/{job_id}"
+
+# Download Excel analysis report
+curl "http://localhost:8000/v1/feedback/download/{job_id}/feedback_analysis.xlsx" -o analysis_report.xlsx
+```
+
 #### Using HTTPie (Alternative)
 
 **Descriptions:**
@@ -147,6 +177,18 @@ http -f POST localhost:8000/v1/images/generate \
   brand_style="estilo orgánico premium con colores naturales" \
   aspect_ratio="1:1" \
   seed:=12345
+```
+
+**Feedback Analysis:**
+```bash
+# Upload feedback file
+http -f POST localhost:8000/v1/feedback/analyze file@feedback_comments.csv
+
+# Get sample format
+http GET localhost:8000/v1/feedback/sample
+
+# Check health
+http GET localhost:8000/v1/feedback/health
 ```
 
 ### Rendimiento y Optimización
@@ -178,6 +220,22 @@ http -f POST localhost:8000/v1/images/generate \
    - Ser específico pero conciso
    - Incluir estilo fotográfico deseado
    - Usar brand_style para consistencia
+
+**Feedback Analysis (Fase 3):**
+
+1. **Procesamiento concurrente**: ~5-15 comentarios por segundo
+   - Ajustable con MAX_CONCURRENCY (default: 5)
+   - Análisis por lotes para eficiencia
+
+2. **Tamaño de archivos**:
+   - Máximo 10MB por archivo
+   - Soporte CSV y XLSX
+   - Hasta ~1000 comentarios recomendado para mejor performance
+
+3. **Calidad de análisis**:
+   - Comentarios entre 5-1000 caracteres
+   - Mejor precisión con contexto (SKU, channel)
+   - Análisis multilingüe (optimizado para español)
 
 ### Testing
 
@@ -258,6 +316,13 @@ docker/
 - `app/api/routers/images.py` - Images API endpoints
 - `app/tests/test_images.py` - Comprehensive images tests
 - `app/domain/prompts/system_visual.md` - Visual guidelines
+
+**Phase 3 (Feedback Analysis):**
+- `app/domain/chains/feedback_chain.py` - LangChain feedback analysis
+- `app/domain/services/feedback_service.py` - Feedback service with file processing
+- `app/api/routers/feedback.py` - Feedback API endpoints with upload
+- `app/tests/test_feedback.py` - Comprehensive feedback tests
+- `app/domain/prompts/system_insights.md` - Analysis guidelines
 
 **Core Infrastructure:**
 - `pyproject.toml` - Python project configuration
