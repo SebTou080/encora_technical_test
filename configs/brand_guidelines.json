@@ -1,0 +1,41 @@
+{
+  "voice": {
+    "tone": "cálido y experto",
+    "personality": "auténtico, confiable, empático",
+    "register": "conversacional pero informado"
+  },
+  "prohibited_words": [
+    "cura",
+    "trata",
+    "previene enfermedades",
+    "milagroso",
+    "mágico",
+    "revolucionario",
+    "elimina toxinas",
+    "desintoxica completamente",
+    "garantizado",
+    "100% efectivo"
+  ],
+  "cautious_words": {
+    "superfood": "rico en nutrientes",
+    "natural": "especificar qué aspectos son naturales",
+    "saludable": "acompañar con datos específicos"
+  },
+  "content_principles": [
+    "Mencionar beneficios antes que características",
+    "Usar números específicos cuando sea posible",
+    "Incluir calls-to-action sutiles pero claros",
+    "Adaptar lenguaje al público objetivo",
+    "Evitar superlativos exagerados"
+  ],
+  "tone_avoid": [
+    "agresivo",
+    "elitista",
+    "culpabilizador"
+  ],
+  "tone_prefer": [
+    "inclusivo",
+    "motivador",
+    "realista"
+  ]
+}

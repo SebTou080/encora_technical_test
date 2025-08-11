@@ -1,0 +1,72 @@
+{
+  "ecommerce": {
+    "title": {
+      "max_chars": 80,
+      "requirements": "incluye beneficio principal"
+    },
+    "short_description": {
+      "min_chars": 150,
+      "max_chars": 200,
+      "requirements": "hook emocional + beneficio"
+    },
+    "long_description": {
+      "min_words": 300,
+      "max_words": 500,
+      "requirements": "storytelling + especificaciones"
+    },
+    "bullets": {
+      "count": "3-5",
+      "requirements": "beneficios concretos y diferenciadores"
+    },
+    "seo": {
+      "meta_title_max_chars": 60,
+      "meta_description_chars": "150-160",
+      "requirements": "keywords naturales"
+    }
+  },
+  "mercado_libre": {
+    "title": {
+      "max_chars": 60,
+      "requirements": "keywords de búsqueda importantes"
+    },
+    "bullets": {
+      "count": "5-7",
+      "requirements": "puntos concisos, características y beneficios"
+    }
+  },
+  "instagram": {
+    "caption": {
+      "min_words": 100,
+      "max_words": 150,
+      "requirements": "conversacional y visual"
+    },
+    "hashtags": {
+      "count": "8-12",
+      "requirements": "mix de populares y nicho"
+    }
+  },
+  "common_guidelines": {
+    "reading_level": "B1",
+    "max_sentence_words": 20,
+    "max_paragraph_sentences": 3,
+    "voice_preference": "activa"
+  },
+  "target_audiences": {
+    "adultos_conscientes": {
+      "keywords": ["saludable", "bienestar", "nutrición", "calidad"],
+      "tone": "informativo y confiable"
+    },
+    "familias": {
+      "keywords": ["familia", "niños", "compartir", "momento"],
+      "tone": "cálido y cercano"
+    },
+    "fitness": {
+      "keywords": ["energía", "proteína", "rendimiento", "activo"],
+      "tone": "motivador y dinámico"
+    },
+    "gourmet": {
+      "keywords": ["premium", "artesanal", "sabor", "experiencia"],
+      "tone": "sofisticado pero accesible"
+    }
+  }
+}
