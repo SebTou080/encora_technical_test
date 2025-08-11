@@ -22,7 +22,7 @@ AI-powered snack marketing content generator using FastAPI and LangChain.
 - **Health monitoring** for image services
 - **Comprehensive test coverage** with mocks
 
-## Phase 3 - Feedback Analysis and Insights 📊
+## Phase 3 - Feedback Analysis and Insights 📊 ✅
 
 ### Features
 - **LangChain-powered sentiment analysis** with GPT-4o
@@ -33,6 +33,18 @@ AI-powered snack marketing content generator using FastAPI and LangChain.
 - **Multi-dimensional aggregation** (by SKU, channel, sentiment)
 - **Excel export** with multiple analysis sheets
 - **Comprehensive insights** with actionable recommendations
+
+## Phase 4 - Interactive Frontend with Gradio 🎨
+
+### Features
+- **3-tab interface** covering all functionality
+- **Real-time API integration** with status monitoring
+- **Interactive forms** with validation and guidance
+- **File upload and download** capabilities
+- **Visual results display** with JSON formatting
+- **Responsive design** with modern UI components
+- **Error handling** with user-friendly messages
+- **Auto-download** of generated artifacts
 
 ### Quick Start
 
@@ -53,10 +65,21 @@ OPENAI_API_KEY=your-openai-api-key-here
 docker-compose up -d
 ```
 
-4. Check health:
+4. Check services:
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8000/health      # API health
+curl http://localhost:7860            # Frontend (Gradio UI)
 ```
+
+### Access the Application
+
+- **Frontend (Gradio UI)**: http://localhost:7860
+  - Tab 1: 📝 **Descripciones** - Generate product descriptions  
+  - Tab 2: 🎨 **Imágenes** - Create promotional images
+  - Tab 3: 📊 **Análisis** - Analyze customer feedback
+
+- **API Documentation**: http://localhost:8000/docs
+- **API Health**: http://localhost:8000/health
 
 #### Local Development
 
@@ -76,9 +99,13 @@ cp configs/.env.example configs/.env
 # Edit configs/.env with your API keys
 ```
 
-4. Run the API:
+4. Run the services:
 ```bash
+# Terminal 1: API
 python -m app.main
+
+# Terminal 2: Frontend
+cd frontend && python app.py
 ```
 
 ### API Usage
@@ -323,6 +350,11 @@ docker/
 - `app/api/routers/feedback.py` - Feedback API endpoints with upload
 - `app/tests/test_feedback.py` - Comprehensive feedback tests
 - `app/domain/prompts/system_insights.md` - Analysis guidelines
+
+**Phase 4 (Frontend):**
+- `frontend/app.py` - Gradio interface with 3 tabs
+- `docker/Dockerfile.frontend` - Frontend Docker configuration
+- Updated `docker-compose.yml` - Full stack deployment
 
 **Core Infrastructure:**
 - `pyproject.toml` - Python project configuration
