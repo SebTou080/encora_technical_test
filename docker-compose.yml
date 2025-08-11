@@ -14,7 +14,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - HF_MODEL_URL=${HF_MODEL_URL:-https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell}
-      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_TOKEN=${HF_TOKEN:-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}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - API_HOST=0.0.0.0
       - API_PORT=8000
