@@ -33,21 +33,12 @@ async def generate_descriptions(
         
         if not request.product_name.strip():
             raise ValidationError("Product name cannot be empty", correlation_id)
-            
-        if not request.sku.strip():
-            raise ValidationError("SKU cannot be empty", correlation_id)
         
         # Generate descriptions
         channels_str = ", ".join(request.channels)
-        logger.info(f"📝 Generating content for '{request.product_name}' → {channels_str} (variants: {request.variants})")
+        logger.info(f"📝 Generating content for '{request.product_name}' → {channels_str}")
         
-        if request.variants > 1:
-            logger.info(f"🔄 Processing {request.variants} variants concurrently...")
-            variants = await service.generate_variants(request)
-            logger.info(f"✨ Generated {len(variants)} variants successfully")
-            return variants[0] if variants else None
-        else:
-            return await service.generate_descriptions(request)
+        return await service.generate_descriptions(request)
             
     except ValidationError:
         raise

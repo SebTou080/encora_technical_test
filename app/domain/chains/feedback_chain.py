@@ -9,9 +9,11 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
+from langsmith import traceable
 
 from ...core.config import settings
 from ...core.logging import get_logger
+from ...core.langsmith import LangSmithTracer
 from ..models.feedback import (
     FeedbackAnalyzeResponse,
     FeatureRequest,
@@ -79,7 +81,6 @@ COMENTARIO A ANALIZAR:
 "{comment}"
 
 INFORMACIÓN ADICIONAL:
-- SKU: {sku}
 - Canal: {channel}
 - Usuario: {username}
 
@@ -93,15 +94,18 @@ IMPORTANTE:
 """
         return PromptTemplate(
             template=template,
-            input_variables=["comment", "sku", "channel", "username", "guidelines"],
+            input_variables=["comment", "channel", "username", "guidelines"],
             partial_variables={"format_instructions": self.parser.get_format_instructions()}
         )
 
+    @traceable(
+        name="comment-analysis",
+        tags=["healthy-snack-ia", "feedback", "sentiment-analysis"]
+    )
     async def analyze_comment(
         self, 
         comment: str, 
         username: str = "anonymous",
-        sku: Optional[str] = None,
         channel: Optional[str] = None
     ) -> CommentAnalysis:
         """Analyze a single comment."""
@@ -110,13 +114,24 @@ IMPORTANTE:
             input_data = {
                 "comment": comment.strip(),
                 "username": username,
-                "sku": sku or "unknown",
                 "channel": channel or "unknown",
                 "guidelines": self.insights_guidelines[:1500]  # Limit guidelines length
             }
 
             logger.info(f"🧠 Analyzing comment from {username}: '{comment[:50]}...'")
-            result = await self.chain.ainvoke(input_data)
+            result = await self.chain.ainvoke(
+                input_data,
+                config={
+                    "run_name": f"comment-analysis-{username}",
+                    "tags": ["feedback", "sentiment", channel or "unknown"],
+                    "metadata": {
+                        "comment_length": len(comment),
+                        "username": username,
+                        "channel": channel,
+                        "operation_type": "sentiment_analysis"
+                    }
+                }
+            )
             
             # Validate and clean results
             result = self._validate_analysis(result)
@@ -160,6 +175,10 @@ IMPORTANTE:
         
         return analysis
 
+    @traceable(
+        name="feedback-batch-analysis",
+        tags=["healthy-snack-ia", "feedback", "batch-processing"]
+    )
     async def analyze_batch(
         self,
         comments_data: List[Dict[str, Any]],
@@ -173,6 +192,9 @@ IMPORTANTE:
         max_concurrency = max_concurrency or settings.max_concurrency
         semaphore = asyncio.Semaphore(max_concurrency)
         
+        # Configure LangSmith tracing
+        trace_config = LangSmithTracer.get_feedback_config(len(comments_data))
+        
         logger.info(f"🚀 Starting batch analysis of {len(comments_data)} comments (concurrency: {max_concurrency})")
 
         async def analyze_single(comment_data: Dict[str, Any]) -> CommentAnalysis:
@@ -180,7 +202,6 @@ IMPORTANTE:
                 return await self.analyze_comment(
                     comment=comment_data.get("comment", ""),
                     username=comment_data.get("username", "anonymous"),
-                    sku=comment_data.get("sku"),
                     channel=comment_data.get("channel")
                 )
 
@@ -225,7 +246,6 @@ IMPORTANTE:
                 top_issues=[],
                 feature_requests=[],
                 highlights=[],
-                by_sku={},
                 by_channel={}
             )
 
@@ -280,8 +300,7 @@ IMPORTANTE:
         # Generate highlights
         highlights = self._generate_highlights(analyses, comments_data)
 
-        # Aggregate by SKU and channel
-        by_sku = self._aggregate_by_field(analyses, comments_data, "sku")
+        # Aggregate by channel
         by_channel = self._aggregate_by_field(analyses, comments_data, "channel")
 
         logger.info(f"✅ Aggregation complete: {len(themes)} themes, {len(top_issues)} issues, {len(feature_requests)} requests")
@@ -292,7 +311,6 @@ IMPORTANTE:
             top_issues=top_issues,
             feature_requests=feature_requests,
             highlights=highlights,
-            by_sku=by_sku,
             by_channel=by_channel
         )
 
@@ -333,7 +351,6 @@ IMPORTANTE:
                 if len(comment) > 20 and len(comment) < 150:  # Good length for highlights
                     highlights.append(Highlight(
                         quote=comment,
-                        sku=comment_data.get("sku"),
                         channel=comment_data.get("channel")
                     ))
                     
@@ -348,7 +365,7 @@ IMPORTANTE:
         comments_data: List[Dict[str, Any]], 
         field: str
     ) -> Dict[str, Any]:
-        """Aggregate results by a specific field (sku or channel)."""
+        """Aggregate results by a specific field (channel)."""
         field_data = defaultdict(lambda: {
             "sentiments": Counter(),
             "themes": Counter(),

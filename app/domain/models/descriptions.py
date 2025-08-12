@@ -51,9 +51,7 @@ class TraceInfo(BaseModel):
 class DescriptionGenerateRequest(BaseModel):
     """Request for generating product descriptions."""
     product_name: str = Field(..., description="Product name")
-    sku: str = Field(..., description="Stock keeping unit")
     brand: str = Field(..., description="Brand name")
-    language: str = Field("es", description="Output language")
     channels: List[str] = Field(..., description="Target channels")
     target_audience: Optional[str] = Field(None, description="Target audience")
     category: str = Field(..., description="Product category")
@@ -61,13 +59,12 @@ class DescriptionGenerateRequest(BaseModel):
     ingredients: List[str] = Field(default_factory=list, description="Main ingredients")
     nutrition_facts: Optional[NutritionFacts] = Field(None, description="Nutrition information")
     tone: str = Field("cálido y experto", description="Brand tone")
-    variants: int = Field(1, description="Number of variants to generate")
 
 
 class DescriptionGenerateResponse(BaseModel):
     """Response from description generation."""
-    sku: str = Field(..., description="Stock keeping unit")
-    language: str = Field(..., description="Output language")
+    product_name: str = Field(..., description="Product name")
+    brand: str = Field(..., description="Brand name")
     by_channel: Dict[str, Any] = Field(..., description="Descriptions by channel")
     compliance: ComplianceInfo = Field(..., description="Compliance information")
     trace: TraceInfo = Field(..., description="Generation trace")

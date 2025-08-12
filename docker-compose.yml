@@ -15,6 +15,11 @@ services:
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - HF_MODEL_URL=${HF_MODEL_URL:-https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell}
       - HF_TOKEN=${HF_TOKEN:-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}
+      # LangSmith Configuration
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-pr-crazy-subset-65}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT:-https://api.smith.langchain.com}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - API_HOST=0.0.0.0
       - API_PORT=8000

@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     )
     hf_token: Optional[str] = Field(default=None, description="Hugging Face API token")
     
+    # LangSmith Configuration
+    langchain_tracing_v2: bool = Field(default=False, description="Enable LangSmith tracing")
+    langchain_api_key: Optional[str] = Field(default=None, description="LangSmith API key")
+    langchain_project: str = Field(default="pr-crazy-subset-65", description="LangSmith project name")
+    langchain_endpoint: str = Field(default="https://api.smith.langchain.com", description="LangSmith endpoint")
+    
     # Server Configuration
     api_host: str = Field(default="0.0.0.0", description="API host")
     api_port: int = Field(default=8000, description="API port")

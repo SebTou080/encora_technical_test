@@ -7,9 +7,13 @@ from .api.middleware import CorrelationIdMiddleware
 from .api.routers import descriptions, feedback, images
 from .core.config import settings
 from .core.logging import setup_logging
+from .core.langsmith import configure_langsmith
 
 # Set up logging
 setup_logging()
+
+# Configure LangSmith tracing
+configure_langsmith()
 
 # Create FastAPI application
 app = FastAPI(

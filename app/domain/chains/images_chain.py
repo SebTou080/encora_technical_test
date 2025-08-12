@@ -30,29 +30,9 @@ class ImagesChain:
             return "Create high-quality, professional product images with natural lighting."
 
     def _optimize_prompt(self, request: ImageGenerateRequest) -> str:
-        """Optimize the image generation prompt based on brand style and aspect ratio."""
+        """Optimize the image generation prompt based on aspect ratio."""
         
         base_prompt = request.prompt_brief
-        
-        # Add brand style if provided
-        if request.brand_style:
-            try:
-                # Try to parse as JSON if it looks like JSON
-                if request.brand_style.strip().startswith('{'):
-                    brand_data = json.loads(request.brand_style)
-                    style_elements = []
-                    if 'colors' in brand_data:
-                        style_elements.append(f"colors: {', '.join(brand_data['colors'])}")
-                    if 'style' in brand_data:
-                        style_elements.append(f"style: {brand_data['style']}")
-                    if style_elements:
-                        base_prompt += f", {', '.join(style_elements)}"
-                else:
-                    # Treat as plain text description
-                    base_prompt += f", {request.brand_style}"
-            except json.JSONDecodeError:
-                # Fallback to plain text
-                base_prompt += f", {request.brand_style}"
 
         # Optimize based on aspect ratio
         aspect_ratio = request.aspect_ratio.lower()
@@ -161,17 +141,7 @@ class ImagesChain:
                 job_id=job_id,
                 artifact_path=image_path,
                 width=width,
-                height=height,
-                provider="hf",
-                model_url=hf_response.model_url,
-                meta={
-                    "prompt": optimized_prompt,
-                    "original_prompt": request.prompt_brief,
-                    "negative_prompt": metadata.get("negative_prompt"),
-                    "seed": request.seed,
-                    "aspect_ratio": request.aspect_ratio,
-                    "file_size_bytes": len(hf_response.image_bytes)
-                }
+                height=height
             )
             
         except Exception as e:

@@ -24,10 +24,8 @@ def get_images_service() -> ImagesService:
 @router.post("/generate", response_model=ImageGenerateResponse)
 async def generate_image(
     prompt_brief: str = Form(..., description="Image generation prompt"),
-    brand_style: Optional[str] = Form(None, description="Brand style guidelines (JSON or text)"),
     aspect_ratio: str = Form("1:1", description="Image aspect ratio"),
     seed: Optional[int] = Form(None, description="Random seed for reproducibility"),
-    reference_image: Optional[UploadFile] = File(None, description="Reference image (optional)"),
     service: ImagesService = Depends(get_images_service),
 ) -> ImageGenerateResponse:
     """Generate promotional image using Hugging Face Inference API."""
@@ -47,16 +45,9 @@ async def generate_image(
                 correlation_id
             )
         
-        # Handle reference image if provided (for future use)
-        if reference_image:
-            logger.info(f"📷 Reference image uploaded: {reference_image.filename} ({reference_image.size} bytes)")
-            # Note: Reference image handling can be implemented in future iterations
-            # For now, we'll just log it but not use it in generation
-        
         # Create request object
         request = ImageGenerateRequest(
             prompt_brief=prompt_brief,
-            brand_style=brand_style,
             aspect_ratio=aspect_ratio,
             seed=seed
         )

@@ -9,9 +9,11 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
+from langsmith import traceable
 
 from ...core.config import settings
 from ...core.logging import get_logger
+from ...core.langsmith import LangSmithTracer
 from ..models.descriptions import (
     ComplianceInfo,
     DescriptionGenerateRequest,
@@ -60,7 +62,6 @@ Eres un copywriter experto especializado en productos de snacks saludables.
 
 INFORMACIÓN DEL PRODUCTO:
 - Nombre: {product_name}
-- SKU: {sku}
 - Marca: {brand}
 - Categoría: {category}
 - Características: {features}
@@ -68,7 +69,6 @@ INFORMACIÓN DEL PRODUCTO:
 - Información nutricional: {nutrition_facts}
 - Público objetivo: {target_audience}
 - Tono deseado: {tone}
-- Idioma: {language}
 
 CANALES REQUERIDOS: {channels}
 
@@ -107,9 +107,9 @@ IMPORTANTE:
         return PromptTemplate(
             template=template,
             input_variables=[
-                "product_name", "sku", "brand", "category", "features",
+                "product_name", "brand", "category", "features",
                 "ingredients", "nutrition_facts", "target_audience", "tone",
-                "language", "channels", "brand_guidelines", "guardrails"
+                "channels", "brand_guidelines", "guardrails"
             ],
             partial_variables={"format_instructions": self.parser.get_format_instructions()}
         )
@@ -162,13 +162,23 @@ IMPORTANTE:
             reading_level=reading_level
         )
 
+    @traceable(
+        name="descriptions-generation",
+        tags=["healthy-snack-ia", "descriptions", "content-generation"]
+    )
     async def generate(self, request: DescriptionGenerateRequest) -> DescriptionGenerateResponse:
         """Generate product descriptions for specified channels."""
+        
+        # Configure LangSmith tracing
+        trace_config = LangSmithTracer.get_descriptions_config(
+            request.product_name, 
+            request.channels
+        )
+        
         try:
             # Prepare input data
             input_data = {
                 "product_name": request.product_name,
-                "sku": request.sku,
                 "brand": request.brand,
                 "category": request.category,
                 "features": ", ".join(request.features),
@@ -176,24 +186,30 @@ IMPORTANTE:
                 "nutrition_facts": request.nutrition_facts.model_dump() if request.nutrition_facts else "No disponible",
                 "target_audience": request.target_audience or "Consumidores conscientes de su salud",
                 "tone": request.tone,
-                "language": request.language,
                 "channels": ", ".join(request.channels),
                 "brand_guidelines": self.brand_guidelines,
                 "guardrails": self.guardrails,
             }
 
-            # Generate descriptions
-            logger.info(f"🤖 Calling LLM for {request.sku}...")
-            result = await self.chain.ainvoke(input_data)
-            logger.info(f"✨ LLM response received for {request.sku}")
+            # Generate descriptions with LangSmith tracing
+            logger.info(f"🤖 Calling LLM for {request.product_name}...")
+            result = await self.chain.ainvoke(
+                input_data,
+                config={
+                    "run_name": f"descriptions-{request.product_name}",
+                    "tags": trace_config["tags"],
+                    "metadata": trace_config["metadata"]
+                }
+            )
+            logger.info(f"✨ LLM response received for {request.product_name}")
             
             # Validate content
-            logger.info(f"🛡️ Validating content compliance for {request.sku}...")
+            logger.info(f"🛡️ Validating content compliance for {request.product_name}...")
             compliance = self._validate_content(result)
             if compliance.health_claims:
-                logger.warning(f"⚠️ Found {len(compliance.health_claims)} compliance issues for {request.sku}")
+                logger.warning(f"⚠️ Found {len(compliance.health_claims)} compliance issues for {request.product_name}")
             else:
-                logger.info(f"✅ Content compliance passed for {request.sku}")
+                logger.info(f"✅ Content compliance passed for {request.product_name}")
             
             # Build response based on requested channels
             by_channel = {}
@@ -215,13 +231,13 @@ IMPORTANTE:
             )
 
             return DescriptionGenerateResponse(
-                sku=request.sku,
-                language=request.language,
+                product_name=request.product_name,
+                brand=request.brand,
                 by_channel=by_channel,
                 compliance=compliance,
                 trace=trace
             )
 
         except Exception as e:
-            logger.error(f"💥 LLM call failed for {request.sku}: {e}")
+            logger.error(f"💥 LLM call failed for {request.product_name}: {e}")
             raise

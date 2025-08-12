@@ -74,7 +74,7 @@ class FeedbackService:
 
             # Validate required columns
             required_columns = ['comment']
-            optional_columns = ['username', 'sku', 'channel', 'date']
+            optional_columns = ['username', 'channel', 'date']
             
             missing_required = [col for col in required_columns if col not in df.columns]
             if missing_required:
@@ -82,7 +82,6 @@ class FeedbackService:
                 column_mapping = {
                     'comment': ['comment', 'comentario', 'feedback', 'review', 'opinion', 'text'],
                     'username': ['username', 'user', 'usuario', 'name', 'nombre'],
-                    'sku': ['sku', 'product_id', 'producto', 'product'],
                     'channel': ['channel', 'canal', 'platform', 'plataforma', 'source'],
                     'date': ['date', 'fecha', 'timestamp', 'created_at']
                 }
@@ -128,7 +127,6 @@ class FeedbackService:
                     valid_comments.append({
                         'comment': comment,
                         'username': str(comment_data.get('username', 'anonymous')),
-                        'sku': comment_data.get('sku'),
                         'channel': comment_data.get('channel'),
                         'date': comment_data.get('date')
                     })

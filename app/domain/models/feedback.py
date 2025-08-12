@@ -33,7 +33,6 @@ class FeatureRequest(BaseModel):
 class Highlight(BaseModel):
     """Notable feedback highlight."""
     quote: str = Field(..., description="Notable quote")
-    sku: Optional[str] = Field(None, description="Related SKU")
     channel: Optional[str] = Field(None, description="Source channel")
 
 
@@ -44,5 +43,4 @@ class FeedbackAnalyzeResponse(BaseModel):
     top_issues: List[Issue] = Field(..., description="Top issues by priority")
     feature_requests: List[FeatureRequest] = Field(..., description="Feature requests")
     highlights: List[Highlight] = Field(..., description="Notable quotes")
-    by_sku: Dict[str, Any] = Field(default_factory=dict, description="Analysis by SKU")
     by_channel: Dict[str, Any] = Field(default_factory=dict, description="Analysis by channel")

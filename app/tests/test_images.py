@@ -17,7 +17,6 @@ def sample_image_request():
     """Sample image generation request."""
     return ImageGenerateRequest(
         prompt_brief="Chips de Quinoa Crujiente sobre superficie de madera clara",
-        brand_style='{"colors": ["verde natural", "blanco"], "style": "organic premium"}',
         aspect_ratio="1:1",
         seed=12345
     )

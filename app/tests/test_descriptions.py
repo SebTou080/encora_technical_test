@@ -18,9 +18,7 @@ def sample_request():
     """Sample description generation request."""
     return DescriptionGenerateRequest(
         product_name="Chips de Kale al Horno",
-        sku="KALE-90G",
         brand="GreenBite",
-        language="es",
         channels=["ecommerce", "mercado_libre", "instagram"],
         target_audience="adultos conscientes de su salud",
         category="snacks_saludables",
@@ -32,8 +30,7 @@ def sample_request():
             fat_g=4.0,
             carbs_g=10.0
         ),
-        tone="cálido y experto",
-        variants=1
+        tone="cálido y experto"
     )
 
 
@@ -94,8 +91,8 @@ class TestDescriptionsChain:
         
         # Assertions
         assert isinstance(result, DescriptionGenerateResponse)
-        assert result.sku == sample_request.sku
-        assert result.language == sample_request.language
+        assert result.product_name == sample_request.product_name
+        assert result.brand == sample_request.brand
         assert "ecommerce" in result.by_channel
         assert "mercado_libre" in result.by_channel
         assert "instagram" in result.by_channel
@@ -135,8 +132,8 @@ class TestDescriptionsService:
         """Test service description generation."""
         # Mock chain response
         mock_response = DescriptionGenerateResponse(
-            sku=sample_request.sku,
-            language=sample_request.language,
+            product_name=sample_request.product_name,
+            brand=sample_request.brand,
             by_channel={"ecommerce": {"title": "Test"}},
             compliance={"health_claims": [], "reading_level": "B1"},
             trace={"model": "gpt-4o", "input_tokens": 100, "output_tokens": 200}
@@ -146,28 +143,9 @@ class TestDescriptionsService:
         service = DescriptionsService()
         result = await service.generate_descriptions(sample_request)
         
-        assert result.sku == sample_request.sku
+        assert result.product_name == sample_request.product_name
         mock_generate.assert_called_once_with(sample_request)
 
-    @patch.object(DescriptionsChain, 'generate')
-    async def test_generate_variants(self, mock_generate, sample_request):
-        """Test generation of multiple variants."""
-        sample_request.variants = 3
-        
-        mock_response = DescriptionGenerateResponse(
-            sku=sample_request.sku,
-            language=sample_request.language,
-            by_channel={"ecommerce": {"title": "Test"}},
-            compliance={"health_claims": [], "reading_level": "B1"},
-            trace={"model": "gpt-4o", "input_tokens": 100, "output_tokens": 200}
-        )
-        mock_generate.return_value = mock_response
-        
-        service = DescriptionsService()
-        variants = await service.generate_variants(sample_request)
-        
-        assert len(variants) == 3
-        assert mock_generate.call_count == 3
 
     async def test_invalid_channels(self, sample_request):
         """Test validation of unsupported channels."""
@@ -187,7 +165,6 @@ class TestRequestValidation:
         with pytest.raises(ValueError):
             DescriptionGenerateRequest(
                 product_name="",  # Empty name should fail
-                sku="TEST",
                 brand="Test",
                 channels=["ecommerce"],
                 category="test"

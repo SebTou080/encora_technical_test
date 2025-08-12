@@ -6,7 +6,6 @@ import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 import gradio as gr
-import pandas as pd
 import requests
 
 # Configuration
@@ -136,9 +135,7 @@ def format_json_display(data: Dict[str, Any]) -> str:
 
 def generate_descriptions_interface(
     product_name: str,
-    sku: str,
     brand: str,
-    language: str,
     channels: List[str],
     target_audience: str,
     category: str,
@@ -148,30 +145,26 @@ def generate_descriptions_interface(
     protein_g: Optional[float],
     fat_g: Optional[float],
     carbs_g: Optional[float],
-    tone: str,
-    variants: int
-) -> Tuple[str, str]:
+    tone: str
+) -> str:
     """Generate product descriptions interface."""
     
-    if not product_name or not sku or not brand:
-        return "❌ Error: Nombre del producto, SKU y marca son requeridos.", ""
+    if not product_name or not brand:
+        return "❌ **Error**: Nombre del producto y marca son requeridos."
     
     if not channels:
-        return "❌ Error: Selecciona al menos un canal.", ""
+        return "❌ **Error**: Selecciona al menos un canal."
     
     # Prepare request data
     request_data = {
         "product_name": product_name,
-        "sku": sku,
         "brand": brand,
-        "language": language,
         "channels": channels,
         "target_audience": target_audience or "Consumidores conscientes de su salud",
         "category": category,
         "features": [f.strip() for f in features.split(",") if f.strip()],
         "ingredients": [i.strip() for i in ingredients.split(",") if i.strip()],
-        "tone": tone,
-        "variants": variants
+        "tone": tone
     }
     
     # Add nutrition facts if provided
@@ -192,24 +185,62 @@ def generate_descriptions_interface(
     result = client.generate_descriptions(**request_data)
     
     if "error" in result:
-        return f"❌ Error: {result['error']}", ""
+        return f"❌ **Error**: {result['error']}"
     
-    # Format success response
-    success_msg = f"""✅ **Descripciones generadas exitosamente**
+    # Format beautiful results
+    by_channel = result.get('by_channel', {})
+    
+    formatted_result = f"""✅ **Descripciones generadas exitosamente para {result.get('product_name', 'N/A')}**
 
-**SKU**: {result.get('sku', 'N/A')}
-**Idioma**: {result.get('language', 'N/A')}
-**Modelo usado**: {result.get('trace', {}).get('model', 'N/A')}
-
-**Compliance**:
-- Claims de salud: {len(result.get('compliance', {}).get('health_claims', []))}
-- Nivel de lectura: {result.get('compliance', {}).get('reading_level', 'N/A')}
 """
     
-    # Format detailed results
-    json_result = format_json_display(result)
+    # Format each channel nicely
+    for channel, content in by_channel.items():
+        if channel == 'ecommerce' and content:
+            formatted_result += f"""## 🛒 **E-commerce**
+**Título**: {content.get('title', 'N/A')}
+
+**Descripción corta**: {content.get('short_description', 'N/A')}
+
+**Descripción larga**: {content.get('long_description', 'N/A')}
+
+**Puntos clave**:
+{chr(10).join([f"• {bullet}" for bullet in content.get('bullets', [])])}
+
+---
+
+"""
+        
+        elif channel == 'mercado_libre' and content:
+            formatted_result += f"""## 🟡 **MercadoLibre**
+**Título**: {content.get('title', 'N/A')}
+
+**Puntos clave**:
+{chr(10).join([f"• {bullet}" for bullet in content.get('bullets', [])])}
+
+---
+
+"""
+        
+        elif channel == 'instagram' and content:
+            formatted_result += f"""## 📸 **Instagram**
+**Caption**: {content.get('caption', 'N/A')}
+
+**Hashtags**: {' '.join([f"#{tag}" for tag in content.get('hashtags', [])])}
+
+---
+
+"""
     
-    return success_msg, json_result
+    # Add compliance info
+    compliance = result.get('compliance', {})
+    formatted_result += f"""## 🛡️ **Compliance**
+- **Claims de salud detectados**: {len(compliance.get('health_claims', []))}
+- **Nivel de lectura**: {compliance.get('reading_level', 'N/A')}
+- **Modelo usado**: {result.get('trace', {}).get('model', 'N/A')}
+"""
+    
+    return formatted_result
 
 
 # ========================
@@ -218,15 +249,12 @@ def generate_descriptions_interface(
 
 def generate_image_interface(
     prompt_brief: str,
-    brand_style: str,
-    aspect_ratio: str,
-    seed: Optional[int],
-    reference_image
-) -> Tuple[str, str, Optional[str]]:
+    aspect_ratio: str
+) -> Optional[str]:
     """Generate promotional image interface."""
     
     if not prompt_brief:
-        return "❌ Error: Prompt de la imagen es requerido.", "", None
+        return None
     
     # Prepare request data
     request_data = {
@@ -234,60 +262,37 @@ def generate_image_interface(
         "aspect_ratio": aspect_ratio
     }
     
-    if brand_style:
-        request_data["brand_style"] = brand_style
-    
-    if seed is not None:
-        request_data["seed"] = seed
-    
-    if reference_image is not None:
-        request_data["reference_image"] = reference_image
-    
     # Generate image
     result = client.generate_image(**request_data)
     
     if "error" in result:
-        return f"❌ Error: {result['error']}", "", None
+        return None
     
     # Download generated image
     job_id = result.get("job_id")
     if job_id:
         image_path = client.download_artifact(job_id, "image.png")
         if image_path:
-            success_msg = f"""✅ **Imagen generada exitosamente**
-
-**Job ID**: {job_id}
-**Dimensiones**: {result.get('width')}x{result.get('height')}
-**Proveedor**: {result.get('provider', 'N/A')}
-**Modelo**: {result.get('model_url', 'N/A').split('/')[-1]}
-
-**Metadata**:
-- Prompt optimizado: ✅
-- Seed: {result.get('meta', {}).get('seed', 'N/A')}
-- Tamaño archivo: {result.get('meta', {}).get('file_size_bytes', 0)} bytes
-"""
-            
-            json_result = format_json_display(result)
-            return success_msg, json_result, image_path
+            return image_path
     
-    return "⚠️ Imagen generada pero no se pudo descargar.", format_json_display(result), None
+    return None
 
 
 # ========================
 # TAB 3: FEEDBACK
 # ========================
 
-def analyze_feedback_interface(file) -> Tuple[str, str, Optional[str]]:
+def analyze_feedback_interface(file) -> Tuple[str, str]:
     """Analyze feedback from uploaded file interface."""
     
     if file is None:
-        return "❌ Error: Selecciona un archivo CSV o XLSX.", "", None
+        return "❌ Error: Selecciona un archivo CSV o XLSX.", ""
     
     # Analyze feedback
     result = client.analyze_feedback(file.name)
     
     if "error" in result:
-        return f"❌ Error: {result['error']}", "", None
+        return f"❌ Error: {result['error']}", ""
     
     # Extract insights for summary
     overall_sentiment = result.get("overall_sentiment", {})
@@ -317,12 +322,8 @@ def analyze_feedback_interface(file) -> Tuple[str, str, Optional[str]]:
 {chr(10).join([f"- {req.get('request', 'N/A')} ({req.get('count', 0)} menciones)" for req in requests[:3]])}
 """
     
-    # Try to get Excel export (we would need job_id tracking for this)
-    excel_path = None
-    # For now, we'll skip Excel download as it requires job_id tracking
-    
     json_result = format_json_display(result)
-    return success_msg, json_result, excel_path
+    return success_msg, json_result
 
 
 # ========================
@@ -332,18 +333,9 @@ def analyze_feedback_interface(file) -> Tuple[str, str, Optional[str]]:
 def create_gradio_interface():
     """Create the main Gradio interface with 3 tabs."""
     
-    # Check API health
-    health = client.health_check()
-    api_status = "✅ API Conectada" if health.get("status") == "healthy" else f"❌ API Error: {health.get('error', 'Unknown')}"
-    
     with gr.Blocks(
         title="Healthy Snack IA",
-        theme=gr.themes.Soft(),
-        css="""
-        .status-indicator { padding: 10px; border-radius: 5px; margin: 10px 0; }
-        .api-healthy { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .api-error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-        """
+        theme=gr.themes.Soft()
     ) as app:
         
         gr.Markdown(
@@ -358,7 +350,6 @@ def create_gradio_interface():
             """
         )
         
-        gr.HTML(f'<div class="status-indicator {"api-healthy" if "✅" in api_status else "api-error"}">{api_status}</div>')
         
         with gr.Tabs():
             
@@ -377,21 +368,17 @@ def create_gradio_interface():
                             value=""
                         )
                         
-                        with gr.Row():
-                            sku = gr.Textbox(label="SKU", placeholder="KALE-90G", value="")
-                            brand = gr.Textbox(label="Marca", placeholder="GreenBite", value="")
+                        brand = gr.Textbox(
+                            label="Marca", 
+                            placeholder="GreenBite", 
+                            value=""
+                        )
                         
-                        with gr.Row():
-                            language = gr.Dropdown(
-                                choices=["es", "en"],
-                                value="es",
-                                label="Idioma"
-                            )
-                            category = gr.Textbox(
-                                label="Categoría",
-                                placeholder="snacks_saludables",
-                                value="snacks_saludables"
-                            )
+                        category = gr.Textbox(
+                            label="Categoría",
+                            placeholder="snacks_saludables",
+                            value="snacks_saludables"
+                        )
                         
                         channels = gr.CheckboxGroup(
                             choices=["ecommerce", "mercado_libre", "instagram"],
@@ -440,37 +427,23 @@ def create_gradio_interface():
                             label="Tono de Voz"
                         )
                         
-                        variants = gr.Slider(
-                            minimum=1,
-                            maximum=3,
-                            step=1,
-                            value=1,
-                            label="Variantes a Generar"
-                        )
                         
                         generate_desc_btn = gr.Button("🚀 Generar Descripciones", variant="primary")
                 
-                with gr.Row():
-                    desc_status = gr.Textbox(
-                        label="Estado",
-                        interactive=False,
-                        max_lines=10
-                    )
-                    
-                    desc_results = gr.JSON(
-                        label="Resultados Detallados",
-                        show_label=True
-                    )
+                desc_results = gr.Markdown(
+                    label="Resultados",
+                    show_label=True
+                )
                 
                 # Event handler for descriptions
                 generate_desc_btn.click(
                     fn=generate_descriptions_interface,
                     inputs=[
-                        product_name, sku, brand, language, channels,
+                        product_name, brand, channels,
                         target_audience, category, features, ingredients,
-                        calories, protein_g, fat_g, carbs_g, tone, variants
+                        calories, protein_g, fat_g, carbs_g, tone
                     ],
-                    outputs=[desc_status, desc_results]
+                    outputs=[desc_results]
                 )
             
             # ============================================
@@ -489,12 +462,6 @@ def create_gradio_interface():
                             value=""
                         )
                         
-                        brand_style = gr.Textbox(
-                            label="Estilo de Marca (opcional)",
-                            placeholder='{"colors": ["verde natural", "blanco"], "style": "organic premium"}',
-                            lines=2,
-                            value=""
-                        )
                         
                         aspect_ratio = gr.Dropdown(
                             choices=["1:1", "16:9", "9:16", "4:3", "3:4"],
@@ -502,17 +469,6 @@ def create_gradio_interface():
                             label="Proporción de Aspecto"
                         )
                         
-                        seed = gr.Number(
-                            label="Seed (opcional, para reproducibilidad)",
-                            minimum=0,
-                            maximum=2147483647,
-                            step=1
-                        )
-                        
-                        reference_image = gr.File(
-                            label="Imagen de Referencia (opcional)",
-                            file_types=["image"]
-                        )
                         
                         generate_img_btn = gr.Button("🎨 Generar Imagen", variant="primary")
                     
@@ -524,23 +480,12 @@ def create_gradio_interface():
                             interactive=False
                         )
                 
-                with gr.Row():
-                    img_status = gr.Textbox(
-                        label="Estado",
-                        interactive=False,
-                        max_lines=8
-                    )
-                    
-                    img_results = gr.JSON(
-                        label="Metadatos de Generación",
-                        show_label=True
-                    )
                 
                 # Event handler for images
                 generate_img_btn.click(
                     fn=generate_image_interface,
-                    inputs=[prompt_brief, brand_style, aspect_ratio, seed, reference_image],
-                    outputs=[img_status, img_results, generated_image]
+                    inputs=[prompt_brief, aspect_ratio],
+                    outputs=[generated_image]
                 )
             
             # ============================================
@@ -563,15 +508,15 @@ def create_gradio_interface():
                             """
                             **Formato esperado:**
                             - **Columna requerida**: `comment` (con el texto del comentario)
-                            - **Columnas opcionales**: `username`, `sku`, `channel`, `date`
+                            - **Columnas opcionales**: `username`, `channel`, `date`
                             - **Formatos**: CSV (UTF-8) o Excel
                             - **Tamaño máximo**: 10MB
                             
                             **Ejemplo CSV:**
                             ```
-                            comment,username,sku,channel
-                            "Me encantan estos chips",user1,KALE-90G,ecommerce
-                            "Muy caros pero ricos",user2,QUINOA-80G,instagram
+                            comment,username,channel
+                            "Me encantan estos chips",user1,ecommerce
+                            "Muy caros pero ricos",user2,instagram
                             ```
                             """
                         )
@@ -586,10 +531,6 @@ def create_gradio_interface():
                             max_lines=15
                         )
                         
-                        excel_download = gr.File(
-                            label="Descargar Análisis Completo (Excel)",
-                            visible=False
-                        )
                 
                 with gr.Row():
                     feedback_results = gr.JSON(
@@ -601,24 +542,9 @@ def create_gradio_interface():
                 analyze_btn.click(
                     fn=analyze_feedback_interface,
                     inputs=[feedback_file],
-                    outputs=[feedback_insights, feedback_results, excel_download]
+                    outputs=[feedback_insights, feedback_results]
                 )
         
-        gr.Markdown(
-            """
-            ---
-            
-            ### 🚀 Healthy Snack IA v1.0
-            
-            **Tecnologías**: FastAPI + LangChain + OpenAI GPT-4o + Hugging Face + Gradio
-            
-            **Funcionalidades Completas**:
-            - ✅ Generación de descripciones multicanal
-            - ✅ Creación de imágenes promocionales  
-            - ✅ Análisis inteligente de feedback
-            - ✅ Exportación y descarga de resultados
-            """
-        )
     
     return app
 

@@ -18,7 +18,7 @@ class DescriptionsService:
 
     async def generate_descriptions(self, request: DescriptionGenerateRequest) -> DescriptionGenerateResponse:
         """Generate product descriptions for specified channels."""
-        logger.info(f"🎯 Starting generation for {request.sku}")
+        logger.info(f"🎯 Starting generation for {request.product_name}")
         
         try:
             # Validate channels
@@ -30,30 +30,10 @@ class DescriptionsService:
             # Generate descriptions
             result = await self.chain.generate(request)
             
-            logger.info(f"🎉 Successfully generated descriptions for {request.sku}")
+            logger.info(f"🎉 Successfully generated descriptions for {request.product_name}")
             return result
 
         except Exception as e:
-            logger.error(f"💥 Generation failed for {request.sku}: {e}")
+            logger.error(f"💥 Generation failed for {request.product_name}: {e}")
             raise
 
-    async def generate_variants(
-        self, 
-        request: DescriptionGenerateRequest
-    ) -> List[DescriptionGenerateResponse]:
-        """Generate multiple variants of descriptions concurrently."""
-        import asyncio
-        
-        logger.info(f"🚀 Launching {request.variants} concurrent tasks for {request.sku}")
-        
-        # Generate all variants concurrently
-        tasks = []
-        for i in range(request.variants):
-            task = self.generate_descriptions(request)
-            tasks.append(task)
-        
-        # Wait for all variants to complete
-        variants = await asyncio.gather(*tasks)
-        
-        logger.info(f"🏆 All {len(variants)} variants completed for {request.sku}")
-        return variants
