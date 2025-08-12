@@ -5,7 +5,7 @@ from typing import Optional
 from ...core.logging import get_logger
 from ..chains.images_chain import ImagesChain
 from ..models.images import ImageGenerateRequest, ImageGenerateResponse
-from ...infra.image_providers.hf_inference import HuggingFaceInferenceProvider
+from ...infra.image_providers.openai_dalle import OpenAIImageProvider
 from ...infra.storage import storage
 
 logger = get_logger(__name__)
@@ -17,7 +17,7 @@ class ImagesService:
     def __init__(self) -> None:
         """Initialize the images service."""
         self.chain = ImagesChain()
-        self.hf_provider = HuggingFaceInferenceProvider()
+        self.openai_provider = OpenAIImageProvider()
 
     async def generate_image(self, request: ImageGenerateRequest) -> ImageGenerateResponse:
         """Generate promotional image using the images chain."""
@@ -50,20 +50,20 @@ class ImagesService:
         logger.info("🔍 Checking image services health...")
         
         try:
-            # Check HF provider
-            hf_healthy = await self.hf_provider.health_check()
+            # Check OpenAI provider
+            openai_healthy = await self.openai_provider.health_check()
             
             # Check storage
             storage_stats = storage.get_storage_stats()
             storage_healthy = "error" not in storage_stats
             
             health_status = {
-                "status": "healthy" if (hf_healthy and storage_healthy) else "degraded",
+                "status": "healthy" if (openai_healthy and storage_healthy) else "degraded",
                 "services": {
-                    "huggingface_inference": {
-                        "status": "healthy" if hf_healthy else "unhealthy",
-                        "provider": "huggingface",
-                        "model_url": self.hf_provider.model_url
+                    "openai_dalle": {
+                        "status": "healthy" if openai_healthy else "unhealthy",
+                        "provider": "openai",
+                        "model": self.openai_provider.model
                     },
                     "storage": {
                         "status": "healthy" if storage_healthy else "unhealthy",

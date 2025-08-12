@@ -37,7 +37,8 @@ def get_run_tags() -> list[str]:
         "healthy-snack-ia",
         "fastapi",
         "langchain",
-        f"model:{settings.openai_model}",
+        f"text-model:{settings.openai_model}",
+        f"image-model:{settings.openai_image_model}",
         "production"
     ]
 
@@ -47,6 +48,7 @@ def get_run_metadata() -> dict:
     return {
         "app_version": "0.1.0",
         "openai_model": settings.openai_model,
+        "openai_image_model": settings.openai_image_model,
         "environment": os.getenv("ENVIRONMENT", "production"),
         "request_timeout": settings.request_timeout_s,
         "max_concurrency": settings.max_concurrency
@@ -88,11 +90,14 @@ class LangSmithTracer:
         )
     
     @staticmethod
-    def get_images_config(prompt: str, aspect_ratio: str) -> dict:
+    def get_images_config(prompt: str, aspect_ratio: str, **kwargs) -> dict:
         """Get trace configuration for image generation."""
         return LangSmithTracer.get_trace_config(
             "image_generation",
             prompt_length=len(prompt),
             aspect_ratio=aspect_ratio,
-            operation_type="image_generation"
+            image_model=settings.openai_image_model,
+            operation_type="image_generation",
+            provider="openai",
+            **kwargs
         )

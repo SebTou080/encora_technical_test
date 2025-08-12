@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 from fastapi.responses import FileResponse
 
 from ...core.logging import get_correlation_id, get_logger
@@ -16,11 +16,6 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/v1/images", tags=["images"])
 
 
-def get_images_service() -> ImagesService:
-    """Get images service instance."""
-    return ImagesService()
-
-
 @router.post("/generate", response_model=ImageGenerateResponse)
 async def generate_image(
     prompt_brief: str = Form(..., description="Image generation prompt"),
@@ -28,7 +23,7 @@ async def generate_image(
     seed: Optional[int] = Form(None, description="Random seed for reproducibility"),
     service: ImagesService = Depends(get_images_service),
 ) -> ImageGenerateResponse:
-    """Generate promotional image using Hugging Face Inference API."""
+    """Generate promotional image using OpenAI DALL-E API."""
     
     correlation_id = get_correlation_id()
     

@@ -8,7 +8,7 @@ import httpx
 from ..domain.models.images import ImageGenerateRequest, ImageGenerateResponse
 from ..domain.services.images_service import ImagesService
 from ..domain.chains.images_chain import ImagesChain
-from ..infra.image_providers.hf_inference import HuggingFaceInferenceProvider, HFImageResponse
+from ..infra.image_providers.openai_dalle import OpenAIImageProvider, OpenAIImageResponse
 from ..infra.storage import StorageService
 
 
@@ -23,18 +23,19 @@ def sample_image_request():
 
 
 @pytest.fixture
-def mock_hf_response():
-    """Mock HF image response."""
-    return HFImageResponse(
+def mock_openai_response():
+    """Mock OpenAI image response."""
+    return OpenAIImageResponse(
         image_bytes=b"fake_png_data_here_12345",
         content_type="image/png",
-        model_url="https://api-inference.huggingface.co/models/test-model",
+        model="dall-e-3",
         prompt="Professional product photography of Chips de Quinoa...",
-        seed=12345,
+        revised_prompt="Professional product photography of Chips de Quinoa Crujiente...",
         meta={
             "job_id": "test-job-123",
-            "width": 1024,
-            "height": 1024,
+            "size": "1024x1024",
+            "quality": "hd",
+            "style": "natural",
             "response_size_bytes": 25
         }
     )
@@ -53,89 +54,77 @@ def mock_storage_service():
     return mock_storage
 
 
-class TestHuggingFaceInferenceProvider:
-    """Test HF Inference API provider."""
+class TestOpenAIImageProvider:
+    """Test OpenAI DALL-E API provider."""
 
     @patch('httpx.AsyncClient.post')
-    async def test_generate_image_success(self, mock_post, sample_image_request):
-        """Test successful image generation via HF API."""
-        # Mock HTTP response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"fake_png_data"
-        mock_response.headers = {"content-type": "image/png"}
-        mock_post.return_value = mock_response
+    @patch('httpx.AsyncClient.get')
+    async def test_generate_image_success(self, mock_get, mock_post, sample_image_request):
+        """Test successful image generation via OpenAI API."""
+        # Mock API response
+        mock_api_response = MagicMock()
+        mock_api_response.status_code = 200
+        mock_api_response.json.return_value = {
+            "data": [{
+                "url": "https://example.com/generated-image.png",
+                "revised_prompt": "Revised prompt here"
+            }]
+        }
+        mock_post.return_value = mock_api_response
         
-        provider = HuggingFaceInferenceProvider()
+        # Mock image download response
+        mock_image_response = MagicMock()
+        mock_image_response.status_code = 200
+        mock_image_response.content = b"fake_png_data"
+        mock_image_response.headers = {"content-type": "image/png"}
+        mock_get.return_value = mock_image_response
+        
+        provider = OpenAIImageProvider()
         result = await provider.generate_image(
             prompt=sample_image_request.prompt_brief,
-            seed=sample_image_request.seed
+            size="1024x1024"
         )
         
-        assert isinstance(result, HFImageResponse)
+        assert isinstance(result, OpenAIImageResponse)
         assert result.image_bytes == b"fake_png_data"
         assert result.content_type == "image/png"
-        assert result.seed == sample_image_request.seed
+        assert result.model == "dall-e-3"
         mock_post.assert_called_once()
-
-    @patch('httpx.AsyncClient.post')
-    async def test_generate_image_model_loading_retry(self, mock_post):
-        """Test HF API model loading scenario with retry."""
-        # First response: 503 (model loading)
-        mock_response_503 = MagicMock()
-        mock_response_503.status_code = 503
-        mock_response_503.text = "Model is loading"
-        
-        # Second response: 200 (success)
-        mock_response_200 = MagicMock()
-        mock_response_200.status_code = 200
-        mock_response_200.content = b"success_image_data"
-        mock_response_200.headers = {"content-type": "image/png"}
-        
-        mock_post.side_effect = [mock_response_503, mock_response_200]
-        
-        provider = HuggingFaceInferenceProvider()
-        
-        with patch('asyncio.sleep') as mock_sleep:
-            result = await provider.generate_image(prompt="test prompt")
-            
-            assert result.image_bytes == b"success_image_data"
-            mock_sleep.assert_called_once_with(20)
-            assert mock_post.call_count == 2
+        mock_get.assert_called_once()
 
     @patch('httpx.AsyncClient.post')
     async def test_generate_image_api_error(self, mock_post):
-        """Test HF API error handling."""
+        """Test OpenAI API error handling."""
         mock_response = MagicMock()
         mock_response.status_code = 400
         mock_response.text = "Bad Request"
         mock_post.return_value = mock_response
         
-        provider = HuggingFaceInferenceProvider()
+        provider = OpenAIImageProvider()
         
         with pytest.raises(Exception) as exc_info:
             await provider.generate_image(prompt="test prompt")
         
-        assert "HF API error: 400" in str(exc_info.value)
+        assert "OpenAI API error: 400" in str(exc_info.value)
 
-    @patch('httpx.AsyncClient.post')
-    async def test_health_check_success(self, mock_post):
+    @patch('httpx.AsyncClient.get')
+    async def test_health_check_success(self, mock_get):
         """Test successful health check."""
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_post.return_value = mock_response
+        mock_get.return_value = mock_response
         
-        provider = HuggingFaceInferenceProvider()
+        provider = OpenAIImageProvider()
         result = await provider.health_check()
         
         assert result is True
 
-    @patch('httpx.AsyncClient.post')
-    async def test_health_check_failure(self, mock_post):
+    @patch('httpx.AsyncClient.get')
+    async def test_health_check_failure(self, mock_get):
         """Test health check failure."""
-        mock_post.side_effect = httpx.RequestError("Connection failed")
+        mock_get.side_effect = httpx.RequestError("Connection failed")
         
-        provider = HuggingFaceInferenceProvider()
+        provider = OpenAIImageProvider()
         result = await provider.health_check()
         
         assert result is False
@@ -187,16 +176,16 @@ class TestImagesChain:
     """Test images chain functionality."""
 
     @patch('app.infra.storage.storage')
-    @patch.object(HuggingFaceInferenceProvider, 'generate_image')
-    async def test_generate_image(self, mock_hf_generate, mock_storage, sample_image_request, mock_hf_response):
+    @patch.object(OpenAIImageProvider, 'generate_image')
+    async def test_generate_image(self, mock_openai_generate, mock_storage, sample_image_request, mock_openai_response):
         """Test image generation through chain."""
         # Mock storage
         mock_storage.create_job_directory.return_value = "test-job-123"
         mock_storage.save_image.return_value = "./data/artifacts/test-job-123/image.png"
         mock_storage.save_metadata.return_value = "./data/artifacts/test-job-123/metadata.json"
         
-        # Mock HF provider
-        mock_hf_generate.return_value = mock_hf_response
+        # Mock OpenAI provider
+        mock_openai_generate.return_value = mock_openai_response
         
         chain = ImagesChain()
         result = await chain.generate(sample_image_request)
@@ -205,7 +194,6 @@ class TestImagesChain:
         assert result.job_id == "test-job-123"
         assert result.width == 1024
         assert result.height == 1024
-        assert result.provider == "hf"
         
         # Verify storage calls
         mock_storage.create_job_directory.assert_called_once()
@@ -218,7 +206,6 @@ class TestImagesChain:
         optimized = chain._optimize_prompt(sample_image_request)
         
         assert "Professional product photography" in optimized
-        assert "verde natural" in optimized
         assert "photorealistic" in optimized
         assert "studio quality" in optimized
 
@@ -228,9 +215,10 @@ class TestImagesChain:
         
         # Test various aspect ratios
         assert chain._calculate_dimensions("1:1") == (1024, 1024)
-        assert chain._calculate_dimensions("16:9") == (1024, 576)
-        assert chain._calculate_dimensions("9:16") == (576, 1024)
-        assert chain._calculate_dimensions("4:3") == (1024, 768)
+        assert chain._calculate_dimensions("16:9") == (1792, 1024)
+        assert chain._calculate_dimensions("9:16") == (1024, 1792)
+        assert chain._calculate_dimensions("4:3") == (1024, 1024)
+        assert chain._calculate_dimensions("3:4") == (1024, 1024)
 
 
 class TestImagesService:
@@ -274,18 +262,18 @@ class TestImagesService:
         with pytest.raises(ValueError, match="Seed must be between"):
             await service.generate_image(sample_image_request)
 
-    @patch.object(HuggingFaceInferenceProvider, 'health_check')
+    @patch.object(OpenAIImageProvider, 'health_check')
     @patch('app.infra.storage.storage.get_storage_stats')
-    async def test_health_check_all_healthy(self, mock_storage_stats, mock_hf_health):
+    async def test_health_check_all_healthy(self, mock_storage_stats, mock_openai_health):
         """Test health check when all services are healthy."""
-        mock_hf_health.return_value = True
+        mock_openai_health.return_value = True
         mock_storage_stats.return_value = {"total_jobs": 5, "total_files": 10}
         
         service = ImagesService()
         result = await service.health_check()
         
         assert result["status"] == "healthy"
-        assert result["services"]["huggingface_inference"]["status"] == "healthy"
+        assert result["services"]["openai_dalle"]["status"] == "healthy"
         assert result["services"]["storage"]["status"] == "healthy"
 
     @patch.object(ImagesService, 'get_artifact_info')
@@ -304,10 +292,7 @@ class TestImagesService:
                 job_id="new-job-456",
                 artifact_path="./data/artifacts/new-job-456/image.png",
                 width=1024,
-                height=1024,
-                provider="hf",
-                model_url="https://test-model.com",
-                meta={"regenerated": True}
+                height=1024
             )
             mock_generate.return_value = mock_response
             

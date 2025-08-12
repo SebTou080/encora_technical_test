@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     build:
@@ -11,10 +9,9 @@ services:
       - ./data:/app/data
       - ./configs:/app/configs
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-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}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-changeme}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
-      - HF_MODEL_URL=${HF_MODEL_URL:-https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell}
-      - HF_TOKEN=${HF_TOKEN:-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}
+      - OPENAI_IMAGE_MODEL=${OPENAI_IMAGE_MODEL:-dall-e-3}
       # LangSmith Configuration
       - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
       - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}

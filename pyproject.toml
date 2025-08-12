@@ -7,7 +7,7 @@ name = "healthy-snack-ia"
 version = "0.1.0"
 description = "AI-powered snack marketing content generator"
 authors = [{name = "AI Senior Engineer", email = "ai@example.com"}]
-license = {text = "MIT"}
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -25,6 +25,9 @@ dependencies = [
     "gradio>=4.0.0",
     "python-dotenv>=1.0.0",
 ]
+
+[tool.setuptools]
+packages = ["app"]
 
 [project.optional-dependencies]
 dev = [

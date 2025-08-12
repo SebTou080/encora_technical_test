@@ -12,14 +12,8 @@ class Settings(BaseSettings):
     
     # OpenAI Configuration
     openai_api_key: str = Field(default="changeme", description="OpenAI API key")
-    openai_model: str = Field(default="gpt-4o", description="OpenAI model name")
-    
-    # Hugging Face Configuration
-    hf_model_url: str = Field(
-        default="https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
-        description="Hugging Face model inference URL"
-    )
-    hf_token: Optional[str] = Field(default=None, description="Hugging Face API token")
+    openai_model: str = Field(default="gpt-4o", description="OpenAI model name for text generation")
+    openai_image_model: str = Field(default="dall-e-3", description="OpenAI model name for image generation")
     
     # LangSmith Configuration
     langchain_tracing_v2: bool = Field(default=False, description="Enable LangSmith tracing")

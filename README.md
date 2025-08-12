@@ -14,9 +14,9 @@ AI-powered snack marketing content generator using FastAPI and LangChain.
 ## Phase 2 - Promotional Images Generation 🎨 ✅
 
 ### Features
-- **Hugging Face Inference API** integration (FLUX.1-schnell model)
+- **OpenAI DALL-E 3 API** integration for high-quality image generation
 - **Smart prompt optimization** based on brand style and aspect ratio
-- **Multiple aspect ratios** support (1:1, 16:9, 9:16, 4:3, 3:4)
+- **Multiple aspect ratios** support (1:1, 16:9, 9:16)
 - **Artifact storage system** with metadata persistence
 - **Image download and regeneration** capabilities
 - **Health monitoring** for image services
@@ -319,8 +319,7 @@ docker/
 |----------|---------|-------------|
 | OPENAI_API_KEY | changeme | OpenAI API key |
 | OPENAI_MODEL | gpt-4o | OpenAI model name |
-| **HF_MODEL_URL** | FLUX.1-schnell | Hugging Face model URL |
-| **HF_TOKEN** | - | Hugging Face API token |
+| **OPENAI_IMAGE_MODEL** | dall-e-3 | OpenAI image generation model |
 | LOG_LEVEL | INFO | Logging level |
 | API_HOST | 0.0.0.0 | API host |
 | API_PORT | 8000 | API port |
@@ -336,7 +335,7 @@ docker/
 - `app/tests/test_descriptions.py` - Comprehensive descriptions tests
 
 **Phase 2 (Images):**
-- `app/infra/image_providers/hf_inference.py` - Hugging Face API provider
+- `app/infra/image_providers/openai_dalle.py` - OpenAI DALL-E API provider
 - `app/infra/storage.py` - Artifacts storage service
 - `app/domain/chains/images_chain.py` - Image generation chain
 - `app/domain/services/images_service.py` - Images service layer
