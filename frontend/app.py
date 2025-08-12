@@ -631,12 +631,8 @@ if __name__ == "__main__":
     # Create and launch the Gradio interface
     app = create_gradio_interface()
     
+    # Launch Gradio app with minimal, widely supported parameters for compatibility
     app.launch(
         server_name="0.0.0.0",
-        server_port=FRONTEND_PORT,
-        share=False,
-        show_error=True,
-        show_tips=False,
-        enable_queue=True,
-        max_threads=10
+        server_port=FRONTEND_PORT
     )
