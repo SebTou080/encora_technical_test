@@ -20,6 +20,7 @@ router = APIRouter(prefix="/v1/images", tags=["images"])
 async def generate_image(
     prompt_brief: str = Form(..., description="Image generation prompt"),
     aspect_ratio: str = Form("1:1", description="Image aspect ratio"),
+    cantidad_imagenes: int = Form(1, description="Number of images to generate (1-3)"),
     seed: Optional[int] = Form(None, description="Random seed for reproducibility"),
     service: ImagesService = Depends(get_images_service),
 ) -> ImageGenerateResponse:
@@ -40,10 +41,18 @@ async def generate_image(
                 correlation_id
             )
         
+        # Validate cantidad_imagenes
+        if cantidad_imagenes < 1 or cantidad_imagenes > 3:
+            raise ValidationError(
+                f"Invalid cantidad_imagenes: {cantidad_imagenes}. Must be between 1 and 3.", 
+                correlation_id
+            )
+        
         # Create request object
         request = ImageGenerateRequest(
             prompt_brief=prompt_brief,
             aspect_ratio=aspect_ratio,
+            cantidad_imagenes=cantidad_imagenes,
             seed=seed
         )
         

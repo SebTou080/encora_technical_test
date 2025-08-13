@@ -249,9 +249,10 @@ def generate_descriptions_interface(
 
 def generate_image_interface(
     prompt_brief: str,
-    aspect_ratio: str
-) -> Optional[str]:
-    """Generate promotional image interface."""
+    aspect_ratio: str,
+    cantidad_imagenes: int
+) -> Optional[List[str]]:
+    """Generate promotional images interface."""
     
     if not prompt_brief:
         return None
@@ -259,21 +260,28 @@ def generate_image_interface(
     # Prepare request data
     request_data = {
         "prompt_brief": prompt_brief,
-        "aspect_ratio": aspect_ratio
+        "aspect_ratio": aspect_ratio,
+        "cantidad_imagenes": cantidad_imagenes
     }
     
-    # Generate image
+    # Generate images
     result = client.generate_image(**request_data)
     
     if "error" in result:
         return None
     
-    # Download generated image
+    # Download generated images
     job_id = result.get("job_id")
     if job_id:
-        image_path = client.download_artifact(job_id, "image.png")
-        if image_path:
-            return image_path
+        image_paths = []
+        for i in range(cantidad_imagenes):
+            filename = f"image_{i + 1}.png"
+            image_path = client.download_artifact(job_id, filename)
+            if image_path:
+                image_paths.append(image_path)
+        
+        if image_paths:
+            return image_paths
     
     return None
 
@@ -469,23 +477,30 @@ def create_gradio_interface():
                             label="Proporción de Aspecto"
                         )
                         
+                        cantidad_imagenes = gr.Dropdown(
+                             choices=[1, 2, 3],
+                             value=1,
+                             label="Cantidad de Imágenes"
+                         )
                         
                         generate_img_btn = gr.Button("🎨 Generar Imagen", variant="primary")
                     
                     with gr.Column():
-                        gr.Markdown("#### 🖼️ Imagen Generada")
-                        generated_image = gr.Image(
-                            label="Resultado",
+                        gr.Markdown("#### 🖼️ Imágenes Generadas")
+                        generated_images = gr.Gallery(
+                            label="Resultados",
                             show_label=True,
-                            interactive=False
+                            columns=2,
+                            rows=2,
+                            height="auto"
                         )
                 
                 
                 # Event handler for images
                 generate_img_btn.click(
                     fn=generate_image_interface,
-                    inputs=[prompt_brief, aspect_ratio],
-                    outputs=[generated_image]
+                    inputs=[prompt_brief, aspect_ratio, cantidad_imagenes],
+                    outputs=[generated_images]
                 )
             
             # ============================================
