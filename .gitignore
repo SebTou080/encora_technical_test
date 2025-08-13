@@ -11,3 +11,5 @@ __pycache__/
 healthy_snack_ia.egg-info
 .pytest_cache/
 .claude/
+deploy/update-env.sh
+deploy/set-all-env.sh

@@ -74,7 +74,7 @@ class SnackIAClient:
                 response = self.session.post(
                     f"{self.base_url}/v1/feedback/analyze",
                     files=files,
-                    timeout=300
+                    timeout=180
                 )
             response.raise_for_status()
             return response.json()
@@ -272,10 +272,29 @@ def generate_descriptions_interface(
 # TAB 2: IMAGES
 # ========================
 
-def show_image_loading() -> List[str]:
-    """Show image loading placeholder."""
-    # Return a placeholder image or empty list while loading
-    return []
+def show_image_loading() -> str:
+    """Show image loading message."""
+    return """⏳ **Generando imágenes...**
+
+<div style="background-color: #f0f8ff; padding: 15px; border-radius: 10px; border-left: 4px solid #FF6B6B;">
+
+🎨 **Creando tu contenido visual** - Esto puede tomar 5-20 segundos
+
+**¿Qué estamos haciendo?**
+- 🖼️ Procesando tu prompt con OpenAI DALL-E 3
+- 🎯 Optimizando automáticamente la descripción de la imagen
+- 🎨 Generando imágenes en alta definición
+- 💾 Guardando los archivos para descarga
+- ✨ Aplicando el aspect ratio seleccionado
+
+Por favor **no recargues la página** mientras generamos tus imágenes...
+
+</div>
+
+---
+
+💡 **Tip:** DALL-E 3 optimiza automáticamente tu prompt para obtener mejores resultados.
+"""
 
 def generate_image_interface(
     prompt_brief: str,
@@ -338,19 +357,25 @@ def show_feedback_loading() -> Tuple[str, str]:
 
 Por favor espera mientras analizamos todos los comentarios...
 """
-    return loading_msg, ""
+    return loading_msg, format_json_display({"status": "processing", "message": "Analizando archivo..."})
 
 def analyze_feedback_interface(file) -> Tuple[str, str]:
     """Analyze feedback from uploaded file interface."""
     
     if file is None:
-        return "❌ Error: Selecciona un archivo CSV o XLSX.", ""
+        return "❌ Error: Selecciona un archivo CSV o XLSX.", "{}"
     
     # Analyze feedback
     result = client.analyze_feedback(file.name)
     
     if "error" in result:
-        return f"❌ Error: {result['error']}", ""
+        error_msg = f"❌ Error: {result['error']}"
+        # Add more helpful error context
+        if "timeout" in str(result['error']).lower():
+            error_msg += "\n\n💡 **Posibles soluciones:**\n- Reduce el tamaño del archivo\n- Verifica que el formato sea correcto\n- Intenta de nuevo en unos minutos"
+        elif "format" in str(result['error']).lower() or "csv" in str(result['error']).lower():
+            error_msg += "\n\n💡 **Verifica el formato:**\n- El archivo debe ser CSV o XLSX\n- Debe contener una columna 'comment'\n- Usa encoding UTF-8 para CSV"
+        return error_msg, format_json_display({"error": str(result['error'])})
     
     # Extract insights for summary
     overall_sentiment = result.get("overall_sentiment", {})
@@ -554,6 +579,10 @@ def create_gradio_interface():
                     
                     with gr.Column():
                         gr.Markdown("#### 🖼️ Imágenes Generadas")
+                        image_loading_msg = gr.Markdown(
+                            value="",
+                            visible=True
+                        )
                         generated_images = gr.Gallery(
                             label="Resultados",
                             show_label=True,
@@ -566,16 +595,17 @@ def create_gradio_interface():
                 # Event handler for images
                 def handle_generate_images(*args):
                     """Handle image generation with loading state."""
-                    # Show empty gallery while loading
-                    yield []
+                    # Show loading message and empty gallery
+                    yield show_image_loading(), []
                     # Generate actual images
                     result = generate_image_interface(*args)
-                    yield result if result is not None else []
+                    # Clear loading message and show results
+                    yield "", (result if result is not None else [])
                 
                 generate_img_btn.click(
                     fn=handle_generate_images,
                     inputs=[prompt_brief, aspect_ratio, cantidad_imagenes],
-                    outputs=[generated_images],
+                    outputs=[image_loading_msg, generated_images],
                     show_progress="full"  # Shows progress bar
                 )
             
