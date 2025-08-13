@@ -1,7 +1,5 @@
 """Descriptions API router."""
 
-from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ...core.logging import get_correlation_id, get_logger
@@ -25,21 +23,25 @@ async def generate_descriptions(
 ) -> DescriptionGenerateResponse:
     """Generate product descriptions for specified channels."""
     correlation_id = get_correlation_id()
-    
+
     try:
         # Validate request
         if not request.channels:
-            raise ValidationError("At least one channel must be specified", correlation_id)
-        
+            raise ValidationError(
+                "At least one channel must be specified", correlation_id
+            )
+
         if not request.product_name.strip():
             raise ValidationError("Product name cannot be empty", correlation_id)
-        
+
         # Generate descriptions
         channels_str = ", ".join(request.channels)
-        logger.info(f"📝 Generating content for '{request.product_name}' → {channels_str}")
-        
+        logger.info(
+            f"📝 Generating content for '{request.product_name}' → {channels_str}"
+        )
+
         return await service.generate_descriptions(request)
-            
+
     except ValidationError:
         raise
     except ValueError as e:
@@ -48,5 +50,5 @@ async def generate_descriptions(
         logger.error(f"Unexpected error generating descriptions: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Internal server error",
         )

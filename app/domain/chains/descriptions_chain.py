@@ -1,19 +1,16 @@
 """LangChain-based descriptions generation chain with structured output."""
 
-import json
-import os
 from pathlib import Path
-from typing import Any, Dict, List
 
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field
 from langsmith import traceable
+from pydantic import BaseModel, Field
 
 from ...core.config import settings
-from ...core.logging import get_logger
 from ...core.langsmith import LangSmithTracer
+from ...core.logging import get_logger
 from ..models.descriptions import (
     ComplianceInfo,
     DescriptionGenerateRequest,
@@ -21,7 +18,6 @@ from ..models.descriptions import (
     EcommerceDescription,
     InstagramDescription,
     MercadoLibreDescription,
-    SEOMetadata,
     TraceInfo,
 )
 
@@ -30,8 +26,11 @@ logger = get_logger(__name__)
 
 class ChannelDescriptions(BaseModel):
     """Structured output model for all channel descriptions."""
+
     ecommerce: EcommerceDescription = Field(..., description="E-commerce description")
-    mercado_libre: MercadoLibreDescription = Field(..., description="MercadoLibre description")  
+    mercado_libre: MercadoLibreDescription = Field(
+        ..., description="MercadoLibre description"
+    )
     instagram: InstagramDescription = Field(..., description="Instagram description")
 
 
@@ -50,7 +49,7 @@ class DescriptionsChain:
         self.parser = PydanticOutputParser(pydantic_object=ChannelDescriptions)
         self.prompt = self._create_prompt()
         self.chain = self.prompt | self.llm | self.parser
-        
+
         # Load brand guidelines and guardrails
         self.brand_guidelines = self._load_brand_guidelines()
         self.guardrails = self._load_guardrails()
@@ -87,7 +86,7 @@ ECOMMERCE:
 - Bullets: 3-5 puntos de beneficios concretos
 - SEO: keywords relevantes, meta title (60 chars), meta description (150-160 chars)
 
-MERCADOLIBRE:  
+MERCADOLIBRE:
 - Título: máximo 60 caracteres, keywords de búsqueda
 - Bullets: 5-7 puntos concisos de características y beneficios
 
@@ -97,7 +96,7 @@ INSTAGRAM:
 
 IMPORTANTE:
 - Adapta el tono al público objetivo
-- Menciona beneficios antes que características  
+- Menciona beneficios antes que características
 - Usa datos específicos cuando sea posible
 - Evita claims médicos no respaldados
 - Mantén el tono {tone}
@@ -107,17 +106,29 @@ IMPORTANTE:
         return PromptTemplate(
             template=template,
             input_variables=[
-                "product_name", "brand", "category", "features",
-                "ingredients", "nutrition_facts", "target_audience", "tone",
-                "channels", "brand_guidelines", "guardrails"
+                "product_name",
+                "brand",
+                "category",
+                "features",
+                "ingredients",
+                "nutrition_facts",
+                "target_audience",
+                "tone",
+                "channels",
+                "brand_guidelines",
+                "guardrails",
             ],
-            partial_variables={"format_instructions": self.parser.get_format_instructions()}
+            partial_variables={
+                "format_instructions": self.parser.get_format_instructions()
+            },
         )
 
     def _load_brand_guidelines(self) -> str:
         """Load brand guidelines from markdown file."""
         try:
-            guidelines_path = Path(__file__).parent.parent / "prompts" / "system_copywriter.md"
+            guidelines_path = (
+                Path(__file__).parent.parent / "prompts" / "system_copywriter.md"
+            )
             return guidelines_path.read_text(encoding="utf-8")
         except Exception as e:
             logger.error(f"Failed to load brand guidelines: {e}")
@@ -126,7 +137,9 @@ IMPORTANTE:
     def _load_guardrails(self) -> str:
         """Load content guardrails from markdown file."""
         try:
-            guardrails_path = Path(__file__).parent.parent / "prompts" / "policy_guardrails.md"
+            guardrails_path = (
+                Path(__file__).parent.parent / "prompts" / "policy_guardrails.md"
+            )
             return guardrails_path.read_text(encoding="utf-8")
         except Exception as e:
             logger.error(f"Failed to load guardrails: {e}")
@@ -135,46 +148,52 @@ IMPORTANTE:
     def _validate_content(self, descriptions: ChannelDescriptions) -> ComplianceInfo:
         """Validate content against guardrails."""
         prohibited_words = [
-            "cura", "trata", "previene enfermedades", "milagroso", "mágico",
-            "elimina toxinas", "100% efectivo", "garantizado"
+            "cura",
+            "trata",
+            "previene enfermedades",
+            "milagroso",
+            "mágico",
+            "elimina toxinas",
+            "100% efectivo",
+            "garantizado",
         ]
-        
+
         health_claims = []
         all_text = ""
-        
+
         # Collect all text for analysis
-        if hasattr(descriptions, 'ecommerce'):
+        if hasattr(descriptions, "ecommerce"):
             all_text += f" {descriptions.ecommerce.title} {descriptions.ecommerce.short_description} {descriptions.ecommerce.long_description}"
-        
+
         # Check for prohibited words
         text_lower = all_text.lower()
         for word in prohibited_words:
             if word in text_lower:
                 health_claims.append(f"Prohibited word found: {word}")
-        
+
         # Simple readability check (average sentence length)
-        sentences = all_text.split('.')
-        avg_words_per_sentence = sum(len(s.split()) for s in sentences) / max(len(sentences), 1)
-        reading_level = "B1" if avg_words_per_sentence < 20 else "B2"
-        
-        return ComplianceInfo(
-            health_claims=health_claims,
-            reading_level=reading_level
+        sentences = all_text.split(".")
+        avg_words_per_sentence = sum(len(s.split()) for s in sentences) / max(
+            len(sentences), 1
         )
+        reading_level = "B1" if avg_words_per_sentence < 20 else "B2"
+
+        return ComplianceInfo(health_claims=health_claims, reading_level=reading_level)
 
     @traceable(
         name="descriptions-generation",
-        tags=["healthy-snack-ia", "descriptions", "content-generation"]
+        tags=["healthy-snack-ia", "descriptions", "content-generation"],
     )
-    async def generate(self, request: DescriptionGenerateRequest) -> DescriptionGenerateResponse:
+    async def generate(
+        self, request: DescriptionGenerateRequest
+    ) -> DescriptionGenerateResponse:
         """Generate product descriptions for specified channels."""
-        
+
         # Configure LangSmith tracing
         trace_config = LangSmithTracer.get_descriptions_config(
-            request.product_name, 
-            request.channels
+            request.product_name, request.channels
         )
-        
+
         try:
             # Prepare input data
             input_data = {
@@ -183,8 +202,13 @@ IMPORTANTE:
                 "category": request.category,
                 "features": ", ".join(request.features),
                 "ingredients": ", ".join(request.ingredients),
-                "nutrition_facts": request.nutrition_facts.model_dump() if request.nutrition_facts else "No disponible",
-                "target_audience": request.target_audience or "Consumidores conscientes de su salud",
+                "nutrition_facts": (
+                    request.nutrition_facts.model_dump()
+                    if request.nutrition_facts
+                    else "No disponible"
+                ),
+                "target_audience": request.target_audience
+                or "Consumidores conscientes de su salud",
                 "tone": request.tone,
                 "channels": ", ".join(request.channels),
                 "brand_guidelines": self.brand_guidelines,
@@ -198,28 +222,32 @@ IMPORTANTE:
                 config={
                     "run_name": f"descriptions-{request.product_name}",
                     "tags": trace_config["tags"],
-                    "metadata": trace_config["metadata"]
-                }
+                    "metadata": trace_config["metadata"],
+                },
             )
             logger.info(f"✨ LLM response received for {request.product_name}")
-            
+
             # Validate content
-            logger.info(f"🛡️ Validating content compliance for {request.product_name}...")
+            logger.info(
+                f"🛡️ Validating content compliance for {request.product_name}..."
+            )
             compliance = self._validate_content(result)
             if compliance.health_claims:
-                logger.warning(f"⚠️ Found {len(compliance.health_claims)} compliance issues for {request.product_name}")
+                logger.warning(
+                    f"⚠️ Found {len(compliance.health_claims)} compliance issues for {request.product_name}"
+                )
             else:
                 logger.info(f"✅ Content compliance passed for {request.product_name}")
-            
+
             # Build response based on requested channels
             by_channel = {}
-            
+
             if "ecommerce" in request.channels:
                 by_channel["ecommerce"] = result.ecommerce.model_dump()
-            
+
             if "mercado_libre" in request.channels:
                 by_channel["mercado_libre"] = result.mercado_libre.model_dump()
-                
+
             if "instagram" in request.channels:
                 by_channel["instagram"] = result.instagram.model_dump()
 
@@ -227,7 +255,7 @@ IMPORTANTE:
             trace = TraceInfo(
                 model=settings.openai_model,
                 input_tokens=0,  # Would need to implement token counting
-                output_tokens=0
+                output_tokens=0,
             )
 
             return DescriptionGenerateResponse(
@@ -235,7 +263,7 @@ IMPORTANTE:
                 brand=request.brand,
                 by_channel=by_channel,
                 compliance=compliance,
-                trace=trace
+                trace=trace,
             )
 
         except Exception as e:

@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.middleware import CorrelationIdMiddleware
 from .api.routers import descriptions, feedback, images
 from .core.config import settings
-from .core.logging import setup_logging
 from .core.langsmith import configure_langsmith
+from .core.logging import setup_logging
 
 # Set up logging
 setup_logging()
@@ -48,7 +48,7 @@ async def health_check() -> dict:
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "app.main:app",
         host=settings.api_host,
