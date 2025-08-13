@@ -1,369 +1,258 @@
-# Healthy Snack IA
+# Healthy Snack IA 🥜
 
-AI-powered snack marketing content generator using FastAPI and LangChain.
+Sistema de inteligencia artificial para la generación automatizada de contenido de marketing para snacks saludables. Utiliza modelos de OpenAI para crear descripciones de productos, imágenes promocionales y análisis de feedback de clientes.
 
-## Phase 1 - Product Descriptions Generation ✅
+## 🚀 Características Principales
 
-### Features
-- LangChain-based descriptions generation with structured output
-- Multi-channel content (E-commerce, MercadoLibre, Instagram)
-- Content guardrails and compliance validation
-- Human-readable logging with correlation IDs
-- Comprehensive test coverage
+### 📝 Generación de Descripciones
+- **Contenido multicanal**: Genera descripciones optimizadas para diferentes canales (e-commerce, redes sociales, packaging)
+- **Personalización por marca**: Sigue guidelines específicos de voz y tono de marca
+- **Optimización SEO**: Incluye palabras clave relevantes y estructura optimizada
+- **Múltiples variantes**: Genera diferentes versiones para A/B testing
 
-## Phase 2 - Promotional Images Generation 🎨 ✅
+### 🎨 Creación de Imágenes
+- **Generación con DALL-E 3**: Crea imágenes promocionales de alta calidad
+- **Múltiples formatos**: Soporte para diferentes aspect ratios (1:1, 16:9, 9:16, 4:3, 3:4)
+- **Consistencia visual**: Mantiene coherencia con guidelines de marca
+- **Descarga automática**: Almacenamiento y descarga de artefactos generados
 
-### Features
-- **OpenAI DALL-E 3 API** integration for high-quality image generation
-- **Smart prompt optimization** based on brand style and aspect ratio
-- **Multiple aspect ratios** support (1:1, 16:9, 9:16)
-- **Artifact storage system** with metadata persistence
-- **Image download and regeneration** capabilities
-- **Health monitoring** for image services
-- **Comprehensive test coverage** with mocks
+### 📊 Análisis de Feedback
+- **Procesamiento masivo**: Analiza archivos CSV/XLSX con miles de comentarios
+- **Análisis de sentimiento**: Clasificación automática (positivo, neutral, negativo)
+- **Extracción de insights**: Identifica temas, issues y feature requests
+- **Reportes detallados**: Genera análisis agregados por SKU, canal y tiempo
+- **Exportación**: Descarga resultados en formato Excel
 
-## Phase 3 - Feedback Analysis and Insights 📊 ✅
+## 🏗️ Arquitectura
 
-### Features
-- **LangChain-powered sentiment analysis** with GPT-4o
-- **CSV/XLSX file upload** and intelligent parsing
-- **Concurrent processing** with configurable semaphore limits
-- **Smart theme extraction** and issue prioritization
-- **Feature request detection** from user comments
-- **Multi-dimensional aggregation** (by SKU, channel, sentiment)
-- **Excel export** with multiple analysis sheets
-- **Comprehensive insights** with actionable recommendations
+### Backend (FastAPI)
+```
+app/
+├── api/                    # Capa de API REST
+│   ├── routers/           # Endpoints por módulo
+│   │   ├── descriptions.py # Generación de descripciones
+│   │   ├── images.py      # Generación de imágenes
+│   │   └── feedback.py    # Análisis de feedback
+│   ├── deps.py           # Inyección de dependencias
+│   ├── errors.py         # Manejo de errores
+│   └── middleware.py     # Middleware de correlación
+├── core/                 # Configuración central
+│   ├── config.py        # Variables de entorno
+│   ├── logging.py       # Sistema de logging
+│   └── langsmith.py     # Integración LangSmith
+├── domain/              # Lógica de negocio
+│   ├── models/          # Modelos Pydantic
+│   ├── chains/          # Cadenas LangChain
+│   ├── services/        # Servicios de aplicación
+│   └── prompts/         # Templates de prompts
+├── infra/               # Infraestructura
+│   ├── image_providers/ # Proveedores de imágenes
+│   └── storage.py       # Almacenamiento de archivos
+└── tests/               # Suite de pruebas
+```
 
-## Phase 4 - Interactive Frontend with Gradio 🎨
+### Frontend (Gradio)
+- **Interfaz web intuitiva** con 3 pestañas principales
+- **Formularios interactivos** con validación en tiempo real
+- **Visualización de resultados** con formato JSON
+- **Descarga automática** de archivos generados
 
-### Features
-- **3-tab interface** covering all functionality
-- **Real-time API integration** with status monitoring
-- **Interactive forms** with validation and guidance
-- **File upload and download** capabilities
-- **Visual results display** with JSON formatting
-- **Responsive design** with modern UI components
-- **Error handling** with user-friendly messages
-- **Auto-download** of generated artifacts
+## 🛠️ Tecnologías
 
-### Quick Start
+- **Backend**: FastAPI, Python 3.11+
+- **AI/ML**: LangChain, OpenAI GPT-4o, DALL-E 3
+- **Frontend**: Gradio
+- **Datos**: Pandas, OpenPyXL
+- **Monitoreo**: LangSmith (opcional)
+- **Containerización**: Docker, Docker Compose
+- **Testing**: Pytest, pytest-asyncio
+- **Calidad de código**: Ruff, Black, MyPy, Pre-commit
 
-#### With Docker Compose (Recommended)
+## 🚀 Instalación y Uso
 
-1. Copy environment configuration:
+### Opción 1: Docker Compose (Recomendado)
+
+1. **Clonar el repositorio**:
+```bash
+git clone <repository-url>
+cd poc_healthysnackIA
+```
+
+2. **Configurar variables de entorno**:
 ```bash
 cp configs/.env.example configs/.env
 ```
 
-2. Edit `configs/.env` and add your OpenAI API key:
+3. **Editar `configs/.env`** con tu API key de OpenAI:
 ```bash
-OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_API_KEY=tu-api-key-aqui
+OPENAI_MODEL=gpt-4o
+OPENAI_IMAGE_MODEL=dall-e-3
 ```
 
-3. Start the services:
+4. **Iniciar los servicios**:
 ```bash
 docker-compose up -d
 ```
 
-4. Check services:
+5. **Verificar servicios**:
 ```bash
 curl http://localhost:8000/health      # API health
-curl http://localhost:7860            # Frontend (Gradio UI)
+curl http://localhost:7860            # Frontend
 ```
 
-### Access the Application
+### Opción 2: Desarrollo Local
 
-- **Frontend (Gradio UI)**: http://localhost:7860
-  - Tab 1: 📝 **Descripciones** - Generate product descriptions  
-  - Tab 2: 🎨 **Imágenes** - Create promotional images
-  - Tab 3: 📊 **Análisis** - Analyze customer feedback
-
-- **API Documentation**: http://localhost:8000/docs
-- **API Health**: http://localhost:8000/health
-
-#### Local Development
-
-1. Install dependencies:
+1. **Instalar dependencias**:
 ```bash
 pip install -e ".[dev]"
 ```
 
-2. Set up pre-commit hooks:
+2. **Configurar pre-commit hooks**:
 ```bash
 pre-commit install
 ```
 
-3. Copy and configure environment:
+3. **Configurar variables de entorno**:
 ```bash
 cp configs/.env.example configs/.env
-# Edit configs/.env with your API keys
+# Editar configs/.env con tus API keys
 ```
 
-4. Run the services:
+4. **Ejecutar API**:
 ```bash
-# Terminal 1: API
 python -m app.main
-
-# Terminal 2: Frontend
-cd frontend && python app.py
 ```
 
-### API Usage
+5. **Ejecutar Frontend** (en otra terminal):
+```bash
+python frontend/app.py
+```
 
-#### Generate Product Descriptions
+## 🌐 Acceso a la Aplicación
 
+- **Frontend (Gradio UI)**: http://localhost:7860
+  - 📝 **Descripciones**: Genera descripciones de productos
+  - 🎨 **Imágenes**: Crea imágenes promocionales
+  - 📊 **Análisis**: Analiza feedback de clientes
+
+- **API Documentation**: http://localhost:8000/docs
+- **API Health**: http://localhost:8000/health
+
+## 📋 Uso de la API
+
+### Generar Descripciones
 ```bash
 curl -X POST "http://localhost:8000/v1/descriptions/generate" \
   -H "Content-Type: application/json" \
   -d '{
-    "product_name": "Chips de Kale al Horno",
-    "sku": "KALE-90G",
-    "brand": "GreenBite",
-    "language": "es",
-    "channels": ["ecommerce", "mercado_libre", "instagram"],
-    "target_audience": "adultos conscientes de su salud",
-    "category": "snacks_saludables",
-    "features": ["horneado", "sin fritura", "vegano", "sin gluten"],
-    "ingredients": ["kale", "aceite de oliva", "sal marina"],
-    "nutrition_facts": {
-      "calories": 90,
-      "protein_g": 3,
-      "fat_g": 4,
-      "carbs_g": 10
-    },
-    "tone": "cálido y experto",
-    "variants": 1
+    "product_name": "Almendras Tostadas Orgánicas",
+    "channels": ["ecommerce", "social_media"],
+    "key_benefits": ["Alto en proteína", "Sin gluten", "Orgánico"]
   }'
 ```
 
-#### Generate Promotional Images (Phase 2)
-
+### Generar Imágenes
 ```bash
 curl -X POST "http://localhost:8000/v1/images/generate" \
-  -H "Content-Type: multipart/form-data" \
-  -F "prompt_brief=Chips de Kale crujientes sobre superficie de madera clara con ingredientes frescos" \
-  -F "brand_style={\"colors\": [\"verde natural\", \"blanco\"], \"style\": \"organic premium\"}" \
+  -F "prompt_brief=Almendras tostadas en bowl de madera, estilo natural" \
   -F "aspect_ratio=1:1" \
-  -F "seed=12345"
+  -F "cantidad_imagenes=1"
 ```
 
-#### Download Generated Images
-
+### Analizar Feedback
 ```bash
-# Get artifact info
-curl "http://localhost:8000/v1/images/artifacts/{job_id}"
-
-# Download image
-curl "http://localhost:8000/v1/images/artifacts/{job_id}/download/image.png" -o generated_image.png
-
-# Download metadata
-curl "http://localhost:8000/v1/images/artifacts/{job_id}/download/metadata.json" -o metadata.json
-```
-
-#### Analyze Customer Feedback (Phase 3)
-
-```bash
-# Upload CSV/XLSX file for analysis
 curl -X POST "http://localhost:8000/v1/feedback/analyze" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@feedback_comments.csv"
-
-# Get sample file format
-curl "http://localhost:8000/v1/feedback/sample"
-
-# Export analysis to Excel
-curl -X POST "http://localhost:8000/v1/feedback/export/{job_id}"
-
-# Download Excel analysis report
-curl "http://localhost:8000/v1/feedback/download/{job_id}/feedback_analysis.xlsx" -o analysis_report.xlsx
 ```
 
-#### Using HTTPie (Alternative)
+## ⚙️ Configuración
 
-**Descriptions:**
+### Variables de Entorno
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | changeme | API key de OpenAI |
+| `OPENAI_MODEL` | gpt-4o | Modelo para generación de texto |
+| `OPENAI_IMAGE_MODEL` | dall-e-3 | Modelo para generación de imágenes |
+| `LOG_LEVEL` | INFO | Nivel de logging |
+| `API_HOST` | 0.0.0.0 | Host de la API |
+| `API_PORT` | 8000 | Puerto de la API |
+| `FRONTEND_PORT` | 7860 | Puerto del frontend |
+| `REQUEST_TIMEOUT_S` | 60 | Timeout de requests |
+| `MAX_CONCURRENCY` | 5 | Máximo requests concurrentes |
+
+### LangSmith (Opcional)
 ```bash
-http POST localhost:8000/v1/descriptions/generate \
-  product_name="Chips de Kale al Horno" \
-  sku="KALE-90G" \
-  brand="GreenBite" \
-  language="es" \
-  channels:='["ecommerce", "mercado_libre", "instagram"]' \
-  target_audience="adultos conscientes de su salud" \
-  category="snacks_saludables" \
-  features:='["horneado", "sin fritura", "vegano", "sin gluten"]' \
-  ingredients:='["kale", "aceite de oliva", "sal marina"]' \
-  nutrition_facts:='{"calories": 90, "protein_g": 3, "fat_g": 4, "carbs_g": 10}' \
-  tone="cálido y experto" \
-  variants:=1
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=tu-langsmith-key
+LANGCHAIN_PROJECT=tu-proyecto
 ```
 
-**Images:**
-```bash
-http -f POST localhost:8000/v1/images/generate \
-  prompt_brief="Chips de Kale crujientes, fotografía profesional de producto" \
-  brand_style="estilo orgánico premium con colores naturales" \
-  aspect_ratio="1:1" \
-  seed:=12345
-```
+## 🧪 Testing
 
-**Feedback Analysis:**
-```bash
-# Upload feedback file
-http -f POST localhost:8000/v1/feedback/analyze file@feedback_comments.csv
-
-# Get sample format
-http GET localhost:8000/v1/feedback/sample
-
-# Check health
-http GET localhost:8000/v1/feedback/health
-```
-
-### Rendimiento y Optimización
-
-**Descripciones (Fase 1):**
-
-1. **Variantes**: Para mayor velocidad, usa `variants: 1` (predeterminado)
-   - 1 variante: ~15-30 segundos
-   - 3 variantes: ~45-90 segundos (procesamiento concurrente) 
-
-2. **Modelo OpenAI**: 
-   - `gpt-4o`: Más lento pero mejor calidad
-   - `gpt-3.5-turbo`: Más rápido para pruebas
-
-3. **Canales**: Solicita solo los canales necesarios para reducir tiempo de procesamiento
-
-**Imágenes (Fase 2):**
-
-1. **Tiempo de generación**: ~20-60 segundos dependiendo del modelo HF
-   - Primera llamada puede tardar más (carga del modelo)
-   - Llamadas subsequentes más rápidas
-
-2. **Aspect ratios optimizados**:
-   - `1:1`: Redes sociales (Instagram, Facebook)
-   - `16:9`: Banners, headers web
-   - `9:16`: Stories, móvil vertical
-
-3. **Prompts efectivos**:
-   - Ser específico pero conciso
-   - Incluir estilo fotográfico deseado
-   - Usar brand_style para consistencia
-
-**Feedback Analysis (Fase 3):**
-
-1. **Procesamiento concurrente**: ~5-15 comentarios por segundo
-   - Ajustable con MAX_CONCURRENCY (default: 5)
-   - Análisis por lotes para eficiencia
-
-2. **Tamaño de archivos**:
-   - Máximo 10MB por archivo
-   - Soporte CSV y XLSX
-   - Hasta ~1000 comentarios recomendado para mejor performance
-
-3. **Calidad de análisis**:
-   - Comentarios entre 5-1000 caracteres
-   - Mejor precisión con contexto (SKU, channel)
-   - Análisis multilingüe (optimizado para español)
-
-### Testing
-
-Run all tests:
+### Ejecutar todas las pruebas
 ```bash
 pytest
 ```
 
-Run with coverage:
+### Con cobertura
 ```bash
 pytest --cov=app --cov-report=html
 ```
 
-Run linting and formatting:
+### Linting y formateo
 ```bash
 ruff check app/
 black app/
 mypy app/
 ```
 
-### Project Structure
+## 📊 Rendimiento
 
-```
-app/
-├── api/                    # FastAPI routes and middleware
-│   ├── routers/
-│   │   └── descriptions.py # Descriptions endpoint
-│   ├── deps.py            # Dependency injection
-│   ├── errors.py          # Error handling
-│   └── middleware.py      # Correlation ID middleware
-├── core/                  # Core configuration
-│   ├── config.py         # Settings management
-│   └── logging.py        # JSON logging setup
-├── domain/               # Business logic
-│   ├── models/           # Pydantic models
-│   ├── chains/           # LangChain chains
-│   ├── services/         # Service layer
-│   └── prompts/          # Prompt templates
-├── tests/                # Test suite
-└── main.py              # FastAPI app entry point
+### Análisis de Feedback
+- **Procesamiento concurrente**: ~5-15 comentarios por segundo
+- **Tamaño máximo**: 10MB por archivo
+- **Formatos soportados**: CSV, XLSX
+- **Comentarios recomendados**: Hasta ~1000 para mejor performance
 
-configs/
-├── .env.example          # Environment variables template
-├── brand_guidelines.json # Brand voice and guidelines
-└── channel_presets.json  # Channel-specific requirements
+### Generación de Imágenes
+- **Tiempo promedio**: 10-30 segundos por imagen
+- **Formatos soportados**: PNG (alta resolución)
+- **Aspect ratios**: 1:1, 16:9, 9:16, 4:3, 3:4
+- **Cantidad máxima**: 3 imágenes por request
 
-docker/
-└── Dockerfile.api        # API service Dockerfile
+## 🔧 Desarrollo
+
+### Estructura de Commits
+```bash
+git commit -m "feat: nueva funcionalidad"
+git commit -m "fix: corrección de bug"
+git commit -m "docs: actualización documentación"
 ```
 
-### Environment Variables
+### Pre-commit Hooks
+El proyecto incluye hooks automáticos para:
+- Formateo con Black
+- Linting con Ruff
+- Type checking con MyPy
+- Validación de commits
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| OPENAI_API_KEY | changeme | OpenAI API key |
-| OPENAI_MODEL | gpt-4o | OpenAI model name |
-| **OPENAI_IMAGE_MODEL** | dall-e-3 | OpenAI image generation model |
-| LOG_LEVEL | INFO | Logging level |
-| API_HOST | 0.0.0.0 | API host |
-| API_PORT | 8000 | API port |
-| REQUEST_TIMEOUT_S | 60 | Request timeout in seconds |
-| **MAX_CONCURRENCY** | 5 | Maximum concurrent requests |
+## 📁 Archivos de Configuración
 
-### Files Created
+- `configs/brand_guidelines.json`: Guidelines de voz y tono de marca
+- `configs/channel_presets.json`: Configuraciones por canal
+- `configs/.env.example`: Template de variables de entorno
+- `pyproject.toml`: Configuración del proyecto Python
+- `docker-compose.yml`: Orquestación de servicios
 
-**Phase 1 (Descriptions):**
-- `app/domain/chains/descriptions_chain.py` - LangChain descriptions generation
-- `app/domain/services/descriptions_service.py` - Descriptions service layer
-- `app/api/routers/descriptions.py` - Descriptions API endpoints
-- `app/tests/test_descriptions.py` - Comprehensive descriptions tests
+## 🐳 Docker
 
-**Phase 2 (Images):**
-- `app/infra/image_providers/openai_dalle.py` - OpenAI DALL-E API provider
-- `app/infra/storage.py` - Artifacts storage service
-- `app/domain/chains/images_chain.py` - Image generation chain
-- `app/domain/services/images_service.py` - Images service layer
-- `app/api/routers/images.py` - Images API endpoints
-- `app/tests/test_images.py` - Comprehensive images tests
-- `app/domain/prompts/system_visual.md` - Visual guidelines
+### Servicios
+- **api**: Backend FastAPI (puerto 8000)
+- **frontend**: Interfaz Gradio (puerto 7860)
 
-**Phase 3 (Feedback Analysis):**
-- `app/domain/chains/feedback_chain.py` - LangChain feedback analysis
-- `app/domain/services/feedback_service.py` - Feedback service with file processing
-- `app/api/routers/feedback.py` - Feedback API endpoints with upload
-- `app/tests/test_feedback.py` - Comprehensive feedback tests
-- `app/domain/prompts/system_insights.md` - Analysis guidelines
+### Volúmenes
+- `./data`: Almacenamiento de artefactos generados
+- `./configs`: Archivos de configuración
 
-**Phase 4 (Frontend):**
-- `frontend/app.py` - Gradio interface with 3 tabs
-- `docker/Dockerfile.frontend` - Frontend Docker configuration
-- Updated `docker-compose.yml` - Full stack deployment
-
-**Core Infrastructure:**
-- `pyproject.toml` - Python project configuration
-- `docker-compose.yml` - Docker services configuration
-- `app/main.py` - FastAPI application entry point
-- `app/core/` - Configuration and human-readable logging
-- `app/api/middleware.py` - Correlation-id middleware
-- `configs/` - Brand guidelines and environment configuration
-- `docker/` - Docker configuration files
-
-## License
-
-MIT License# encora_technical_test
