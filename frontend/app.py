@@ -133,6 +133,31 @@ def format_json_display(data: Dict[str, Any]) -> str:
 # TAB 1: DESCRIPTIONS
 # ========================
 
+def show_loading_message() -> str:
+    """Show loading message while processing."""
+    return """⏳ **Generando descripciones...**
+
+<div style="background-color: #f0f8ff; padding: 15px; border-radius: 10px; border-left: 4px solid #4CAF50;">
+
+🤖 **Procesando tu solicitud** - Esto puede tomar unos momentos
+
+**¿Qué estamos haciendo?**
+- 📝 Analizando la información del producto
+- 🧠 Generando contenido optimizado con IA (GPT-5-nano)
+- 🎯 Adaptando el texto para cada canal solicitado
+- 🛡️ Verificando compliance y guardrails de contenido
+- ✨ Aplicando el tono de voz seleccionado
+
+
+Por favor **no recargues la página** mientras nuestro modelo de IA trabaja en tu contenido...
+
+</div>
+
+---
+
+💡 **Tip:** Mientras esperas, puedes revisar que toda la información esté completa para obtener mejores resultados.
+"""
+
 def generate_descriptions_interface(
     product_name: str,
     brand: str,
@@ -247,6 +272,11 @@ def generate_descriptions_interface(
 # TAB 2: IMAGES
 # ========================
 
+def show_image_loading() -> List[str]:
+    """Show image loading placeholder."""
+    # Return a placeholder image or empty list while loading
+    return []
+
 def generate_image_interface(
     prompt_brief: str,
     aspect_ratio: str,
@@ -289,6 +319,26 @@ def generate_image_interface(
 # ========================
 # TAB 3: FEEDBACK
 # ========================
+
+def show_feedback_loading() -> Tuple[str, str]:
+    """Show feedback analysis loading message."""
+    loading_msg = """⏳ **Analizando feedback...**
+
+🤖 **Procesando tu archivo** - Esto puede tomar unos momentos
+
+**¿Qué estamos haciendo?**
+- 📄 Leyendo y parseando tu archivo
+- 🧠 Analizando sentimientos con IA
+- 🏷️ Identificando temas principales
+- ⚠️ Detectando issues y problemas
+- 💡 Extrayendo feature requests
+- 📊 Generando insights y estadísticas
+
+**⏱️ Tiempo estimado:** 1-3 minutos dependiendo del tamaño del archivo
+
+Por favor espera mientras analizamos todos los comentarios...
+"""
+    return loading_msg, ""
 
 def analyze_feedback_interface(file) -> Tuple[str, str]:
     """Analyze feedback from uploaded file interface."""
@@ -436,7 +486,11 @@ def create_gradio_interface():
                         )
                         
                         
-                        generate_desc_btn = gr.Button("🚀 Generar Descripciones", variant="primary")
+                        generate_desc_btn = gr.Button(
+                            "🚀 Generar Descripciones", 
+                            variant="primary",
+                            elem_id="generate-desc-btn"
+                        )
                 
                 desc_results = gr.Markdown(
                     label="Resultados",
@@ -444,14 +498,23 @@ def create_gradio_interface():
                 )
                 
                 # Event handler for descriptions
+                def handle_generate_descriptions(*args):
+                    """Handle description generation with loading state."""
+                    # Show loading message immediately
+                    yield show_loading_message()
+                    # Generate actual descriptions
+                    result = generate_descriptions_interface(*args)
+                    yield result
+                
                 generate_desc_btn.click(
-                    fn=generate_descriptions_interface,
+                    fn=handle_generate_descriptions,
                     inputs=[
                         product_name, brand, channels,
                         target_audience, category, features, ingredients,
                         calories, protein_g, fat_g, carbs_g, tone
                     ],
-                    outputs=[desc_results]
+                    outputs=[desc_results],
+                    show_progress="full"  # Shows progress bar
                 )
             
             # ============================================
@@ -483,7 +546,11 @@ def create_gradio_interface():
                              label="Cantidad de Imágenes"
                          )
                         
-                        generate_img_btn = gr.Button("🎨 Generar Imagen", variant="primary")
+                        generate_img_btn = gr.Button(
+                            "🎨 Generar Imágenes", 
+                            variant="primary",
+                            elem_id="generate-img-btn"
+                        )
                     
                     with gr.Column():
                         gr.Markdown("#### 🖼️ Imágenes Generadas")
@@ -497,10 +564,19 @@ def create_gradio_interface():
                 
                 
                 # Event handler for images
+                def handle_generate_images(*args):
+                    """Handle image generation with loading state."""
+                    # Show empty gallery while loading
+                    yield []
+                    # Generate actual images
+                    result = generate_image_interface(*args)
+                    yield result if result is not None else []
+                
                 generate_img_btn.click(
-                    fn=generate_image_interface,
+                    fn=handle_generate_images,
                     inputs=[prompt_brief, aspect_ratio, cantidad_imagenes],
-                    outputs=[generated_images]
+                    outputs=[generated_images],
+                    show_progress="full"  # Shows progress bar
                 )
             
             # ============================================
@@ -536,7 +612,11 @@ def create_gradio_interface():
                             """
                         )
                         
-                        analyze_btn = gr.Button("🔍 Analizar Feedback", variant="primary")
+                        analyze_btn = gr.Button(
+                            "🔍 Analizar Feedback", 
+                            variant="primary",
+                            elem_id="analyze-btn"
+                        )
                     
                     with gr.Column():
                         gr.Markdown("#### 📊 Insights Generados")
@@ -554,10 +634,19 @@ def create_gradio_interface():
                     )
                 
                 # Event handler for feedback
+                def handle_analyze_feedback(file):
+                    """Handle feedback analysis with loading state."""
+                    # Show loading message immediately
+                    yield show_feedback_loading()
+                    # Analyze actual feedback
+                    insights, results = analyze_feedback_interface(file)
+                    yield insights, results
+                
                 analyze_btn.click(
-                    fn=analyze_feedback_interface,
+                    fn=handle_analyze_feedback,
                     inputs=[feedback_file],
-                    outputs=[feedback_insights, feedback_results]
+                    outputs=[feedback_insights, feedback_results],
+                    show_progress="full"  # Shows progress bar
                 )
         
     
