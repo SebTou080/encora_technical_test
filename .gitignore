@@ -9,3 +9,5 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 healthy_snack_ia.egg-info
+.pytest_cache/
+.claude/
